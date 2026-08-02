@@ -69,4 +69,15 @@ class LocalReadinessChecker:
                 client.close()
         except Exception:
             # O Qdrant embutido bloqueia uma segunda abertura enquanto a API usa a pasta.
-            return self._qdrant_mode == "local" and self._local_qdrant_was_ready
+            # Nesse caso, a coleção persistida confirma que a instância ativa já a mantém aberta.
+            return self._qdrant_mode == "local" and (
+                self._local_qdrant_was_ready or self._local_collection_is_persisted()
+            )
+
+    def _local_collection_is_persisted(self) -> bool:
+        """Confirma no disco que a coleção local esperada já foi criada."""
+
+        return (
+            (self._qdrant_path / "meta.json").is_file()
+            and (self._qdrant_path / "collection" / self._collection).is_dir()
+        )
