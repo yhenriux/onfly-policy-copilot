@@ -1,0 +1,53 @@
+{
+  "release": "1.0.0",
+  "executed_on": "2026-08-01",
+  "environment": "local",
+  "readiness": {
+    "api": true,
+    "ollama": true,
+    "qdrant": true
+  },
+  "flow": {
+    "mock_login": "passed",
+    "grounded_answer": "passed",
+    "source_trace": "passed",
+    "feedback": "passed",
+    "prompt_injection_block": "passed"
+  },
+  "tenant_results": {
+    "aurora_tecnologia": {
+      "retrieved_document": "politica_viagens_aurora",
+      "active_version": "v2",
+      "top_score": 0.9997,
+      "generation_status": "no_evidence",
+      "observed_limitation": "O llama3.2:1b recusou a resposta mesmo com a evidência correta na primeira posição."
+    },
+    "brisa_sistemas": {
+      "retrieved_document": "politica_viagens_brisa",
+      "active_version": "v1",
+      "top_score": 0.9986,
+      "generation_status": "generated",
+      "answer": "85,00",
+      "source_returned": true
+    }
+  },
+  "isolation_check": {
+    "aurora_retrieved_only_aurora": true,
+    "brisa_retrieved_only_brisa": true,
+    "cross_tenant_leak_observed": false
+  },
+  "security_check": {
+    "prompt_injection_http_status": 400,
+    "blocked_before_generation": true
+  },
+  "quality_checks": {
+    "ruff": "passed",
+    "mypy": "passed",
+    "pytest": {
+      "status": "passed",
+      "tests": 75,
+      "coverage": 0.9
+    }
+  },
+  "conclusion": "O fluxo completo funciona e uma resposta fundamentada foi entregue para a Brisa. O ensaio também reproduziu a limitação já medida do modelo de 1B: a geração pode recusar mesmo quando o retrieval encontra a fonte correta."
+}

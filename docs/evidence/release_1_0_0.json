@@ -1,0 +1,54 @@
+{
+  "release": {
+    "application_version": "1.0.0",
+    "prompt_version": "policy_answer_v1",
+    "index_schema_version": "phase2",
+    "golden_dataset_version": "v1"
+  },
+  "validation": {
+    "automated_tests_passed": 75,
+    "total_coverage": 0.90,
+    "ruff": "passed",
+    "mypy": "passed",
+    "javascript_syntax": "passed",
+    "security_tests": "passed",
+    "regression_gate": "passed"
+  },
+  "retrieval": {
+    "dense": {"recall_at_5": 1.0, "mrr": 0.7556, "ndcg_at_5": 0.8145},
+    "hybrid": {"recall_at_5": 0.8333, "mrr": 0.7083, "ndcg_at_5": 0.7384},
+    "hybrid_reranked": {"recall_at_5": 1.0, "mrr": 1.0, "ndcg_at_5": 1.0}
+  },
+  "generation": {
+    "correctness": 0.1667,
+    "relevance": 0.1889,
+    "completeness": 0.1667,
+    "source_adherence": 0.5,
+    "known_limitation": "O modelo local de 1B continua sendo o principal gargalo de qualidade."
+  },
+  "safety": {
+    "adversarial_block_rate": 1.0,
+    "cross_tenant_leakage_rate": 0.0,
+    "unanswered_refusal_rate": 0.5
+  },
+  "reranking_latency": {
+    "cold_start_ms": 8808.93,
+    "mean_ms": 205.8,
+    "p95_ms": 227.36
+  },
+  "demo_observation": {
+    "tenant": "aurora_tecnologia",
+    "question_case": "limite diário de alimentação nacional",
+    "answer": "130,00",
+    "document_version": "v2",
+    "source_score": 0.999,
+    "total_latency_ms": 16419.0
+  },
+  "source_hashes_sha256": {
+    "docs/evidence/phase7_golden_results.json": "90E0502C3A93EC0FCA80832CA2FC5EC991BCAF1A8E33700DB54924739548750C",
+    "docs/evidence/phase4_reranking_results.json": "0AEEFC08C1ACF67F654D903EE35598AFBD12C5CEC5A985475B4847A7F50BB31F",
+    "docs/evidence/phase9_rollback_simulation.json": "7E859892766CBF9B16C207A7F8F83788AF2FF18558BF08446D3E5F05EB0E9045",
+    "data/evaluation/golden_dataset_v1.json": "6A0374D553733E7A15CC9A51C14EE693AC30B1026E0393AB2FE07DFAFC6848A2",
+    "data/evaluation/regression_thresholds_v1.json": "08A25D2B44571A8881322A75921247713D4BF289D89087E78A505275C910EBF6"
+  }
+}
