@@ -57,6 +57,7 @@ const elements = {
   sourcesList: document.querySelector("#sources-list"),
   sourceCount: document.querySelector("#source-count"),
   traceSummary: document.querySelector("#trace-summary"),
+  traceContext: document.querySelector("#trace-context"),
   traceGrid: document.querySelector("#trace-grid"),
   requestId: document.querySelector("#request-id"),
   copyRequest: document.querySelector("#copy-request"),
@@ -281,7 +282,13 @@ function renderTrace(data) {
   elements.traceGrid.replaceChildren();
   const timings = data.trace?.timings_ms || { total: data.latency_ms };
   const preferred = ["ollama_embedding", "retrieval", "reranking", "ollama_generation", "total"];
-  const labels = { ollama_embedding: "Embedding", retrieval: "Retrieval", reranking: "Re-ranking", ollama_generation: "Ollama", total: "Total" };
+  const labels = {
+    ollama_embedding: "Entendimento da pergunta",
+    retrieval: "Busca nas políticas",
+    reranking: "Conferência das fontes",
+    ollama_generation: "Preparação da resposta",
+    total: "Tempo total",
+  };
   preferred.filter((name) => timings[name] !== undefined).forEach((name) => {
     const item = document.createElement("div");
     item.className = "trace-item";
@@ -292,7 +299,11 @@ function renderTrace(data) {
     item.append(label, value);
     elements.traceGrid.append(item);
   });
-  elements.traceSummary.textContent = `${data.generation.model} · ${data.generation.prompt_version}`;
+  const sourceCount = (data.sources || []).length;
+  elements.traceContext.textContent = sourceCount
+    ? `Consultamos ${sourceCount} ${sourceCount === 1 ? "fonte autorizada" : "fontes autorizadas"} da sua empresa e conferimos a relevância antes de responder.`
+    : "Não encontramos uma fonte autorizada suficiente para responder com segurança.";
+  elements.traceSummary.textContent = `${Number(timings.total || data.latency_ms).toFixed(0)} ms`;
   elements.requestId.textContent = data.request_id;
 }
 
