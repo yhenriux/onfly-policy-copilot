@@ -102,6 +102,11 @@ async function checkOperations() {
   }
 }
 
+function trackInteraction(event) {
+  if (!state.token) return;
+  api("/v1/telemetry", { method: "POST", body: JSON.stringify({ event }) }, 5000).catch(() => {});
+}
+
 async function login(identityKey) {
   const identity = identities[identityKey];
   document.querySelectorAll(".identity-card").forEach((button) => { button.disabled = true; });
@@ -117,6 +122,7 @@ async function login(identityKey) {
     state.identity = identity;
     state.context = data.context;
     showWorkspace();
+    trackInteraction("login_completed");
   } catch (error) {
     elements.loginError.textContent = error.message || "Falha ao acessar a API.";
     setHidden(elements.loginError, false);
@@ -137,6 +143,7 @@ function showWorkspace() {
 }
 
 function logout() {
+  trackInteraction("logout_completed");
   state.token = null;
   state.identity = null;
   state.context = null;
@@ -189,6 +196,7 @@ async function askQuestion(event) {
   setHidden(elements.responseCard, true);
   setHidden(elements.feedbackConfirmation, true);
   const loadingInterval = startLoading();
+  trackInteraction("question_submitted");
   try {
     const response = await api("/v1/ask", { method: "POST", body: JSON.stringify({ question }) });
     const data = await response.json();
@@ -230,6 +238,7 @@ function renderResponse(data) {
   renderTrace(data);
   setHidden(elements.feedbackRow, false);
   setHidden(elements.responseCard, false);
+  trackInteraction("answer_displayed");
   if (data.generation.status === "no_evidence" || !(data.sources || []).length) {
     showState("info", "Não encontramos essa informação", "Tente dar mais detalhes ou procure a equipe responsável por viagens da sua empresa.");
   } else if (data.generation.status === "degraded") {
@@ -296,6 +305,7 @@ async function sendFeedback(rating) {
     elements.feedbackConfirmation.textContent = rating === "positive" ? "Obrigado pela avaliação!" : "Obrigado. Vamos usar sua avaliação para melhorar.";
     setHidden(elements.feedbackConfirmation, false);
     setHidden(elements.feedbackRow, true);
+    trackInteraction(rating === "positive" ? "feedback_positive" : "feedback_negative");
   } catch {
     showState("error", "Não foi possível enviar sua avaliação", "A resposta continua disponível. Tente novamente em alguns instantes.");
     elements.feedbackRow.querySelectorAll("button").forEach((button) => { button.disabled = false; });
@@ -311,7 +321,7 @@ function buildExamples() {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = question;
-    button.addEventListener("click", () => { elements.question.value = question; updateCharacterCount(); elements.question.focus(); });
+    button.addEventListener("click", () => { elements.question.value = question; updateCharacterCount(); elements.question.focus(); trackInteraction("quick_question_selected"); });
     elements.examples.append(button);
   });
 }
@@ -323,6 +333,7 @@ elements.question.addEventListener("input", updateCharacterCount);
 elements.feedbackRow.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => sendFeedback(button.dataset.rating)));
 elements.copyRequest.addEventListener("click", async () => {
   await navigator.clipboard.writeText(state.requestId || "");
+  trackInteraction("request_id_copied");
   elements.copyRequest.textContent = "Copiado";
   window.setTimeout(() => { elements.copyRequest.textContent = "Copiar"; }, 1200);
 });

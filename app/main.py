@@ -27,6 +27,7 @@ from app.domain.schemas import (
     FeedbackRequest,
     FeedbackResponse,
     LoginRequest,
+    TelemetryRequest,
     TokenResponse,
 )
 from app.feedback.store import InMemoryFeedbackStore
@@ -35,7 +36,7 @@ from app.generation.ollama_provider import OllamaProvider
 from app.generation.service import AskHandler, AskService
 from app.guardrails.tenant_guardrail import TenantGuardedRetriever
 from app.observability.health import LocalReadinessChecker, ReadinessChecker
-from app.observability.langsmith import configure_langsmith
+from app.observability.langsmith import configure_langsmith, trace_user_event
 from app.observability.metrics import operational_metrics
 from app.observability.tracing import current_trace, finish_trace, start_trace
 from app.orchestration.rag_graph import LangGraphAskHandler
@@ -228,6 +229,24 @@ def create_app(
             context=context,
         )
 
+    @application.post("/v1/telemetry", status_code=status.HTTP_204_NO_CONTENT, tags=["operations"])
+    def telemetry(
+        request: TelemetryRequest,
+        context: Annotated[AuthenticatedContext, Depends(authenticated_context)],
+    ) -> None:
+        """Registra uma interação da interface sem guardar o conteúdo da conversa."""
+
+        operational_metrics.increment(f"user_event_{request.event}_total")
+        trace_user_event(request.event)
+        log_structured(
+            logger,
+            "user_interaction",
+            request_id=current_trace().request_id,
+            tenant_id=context.tenant_id,
+            user_id=context.user_id,
+            interaction=request.event,
+        )
+
     @application.post(
         "/v1/ask",
         response_model=AskResponse,
@@ -287,6 +306,8 @@ def create_app(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="A requisição avaliada não pertence a esta sessão.",
             )
+        operational_metrics.increment(f"user_event_feedback_{request.rating}_total")
+        trace_user_event(f"feedback_{request.rating}")
         return response
 
     return application

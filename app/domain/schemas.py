@@ -136,6 +136,23 @@ class FeedbackResponse(BaseModel):
     status: Literal["received"]
 
 
+class TelemetryRequest(BaseModel):
+    """Evento de uso sem pergunta, resposta, credencial ou outro dado sensível."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    event: Literal[
+        "login_completed",
+        "logout_completed",
+        "quick_question_selected",
+        "question_submitted",
+        "answer_displayed",
+        "request_id_copied",
+        "feedback_positive",
+        "feedback_negative",
+    ]
+
+
 class DocumentManifest(BaseModel):
     """Metadados que identificam, versionam e localizam uma política."""
 

@@ -87,6 +87,26 @@ async def test_feedback_is_linked_to_authenticated_request() -> None:
     assert store.records()[0].rating == "positive"
 
 
+async def test_authenticated_interface_event_is_counted_without_conversation_content() -> None:
+    from app.observability.metrics import operational_metrics
+
+    operational_metrics.reset()
+    application = create_app(Settings(app_env="test"))
+    transport = httpx.ASGITransport(app=application)
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        headers = await _login(client, "aurora.demo", "Aurora#2026")
+        response = await client.post(
+            "/v1/telemetry",
+            json={"event": "quick_question_selected"},
+            headers=headers,
+        )
+        metrics = await client.get("/metrics")
+
+    assert response.status_code == 204
+    assert metrics.json()["counters"]["user_event_quick_question_selected_total"] == 1
+
+
 async def test_feedback_cannot_cross_tenants_or_use_unknown_request() -> None:
     store = InMemoryFeedbackStore()
     application = create_app(

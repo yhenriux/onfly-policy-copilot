@@ -29,6 +29,7 @@ from app.generation.grounded_answers import (
 from app.generation.provider import GenerationProvider, ProviderResult
 from app.guardrails.input_guardrail import ensure_safe_question
 from app.guardrails.output_guardrail import keep_safe_document_chunks
+from app.observability.langsmith import trace_quality_signal
 from app.observability.metrics import operational_metrics
 from app.observability.tracing import current_trace, record_timing
 
@@ -228,6 +229,27 @@ class AskService:
             operational_metrics.increment("retries_total", retries)
         if response.generation.status == "degraded":
             operational_metrics.increment("fallbacks_total")
+        operational_metrics.increment("answers_total")
+        operational_metrics.increment(f"answers_status_{response.generation.status}_total")
+        operational_metrics.increment(f"answers_confidence_{response.confidence}_total")
+        operational_metrics.observe_value("sources_per_answer", float(len(response.sources)))
+        # Ollama é executado localmente neste projeto: o custo monetário por resposta é zero.
+        operational_metrics.observe_value("estimated_local_cost_usd", 0.0)
+        operational_metrics.observe_value(
+            "estimated_output_tokens", float(len(response.answer.split()))
+        )
+        top1_score = chunks[0].score if chunks else 0.0
+        operational_metrics.observe_value("retrieval_top1_score", top1_score)
+        operational_metrics.observe_value(
+            "retrieval_top1_evidence_eligible",
+            1.0 if top1_score >= self._evidence_min_score else 0.0,
+        )
+        trace_quality_signal(
+            status=response.generation.status,
+            confidence=response.confidence,
+            source_count=len(response.sources),
+            top1_score=round(top1_score, 4),
+        )
         documents = [
             ExecutionDocument(
                 document_id=chunk.document_id,
