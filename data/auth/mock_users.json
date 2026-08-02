@@ -1,0 +1,20 @@
+{
+  "users": [
+    {
+      "username": "aurora.demo",
+      "user_id": "user_aurora_001",
+      "tenant_id": "aurora_tecnologia",
+      "roles": ["traveler"],
+      "salt": "aurora-demo-salt",
+      "password_hash": "44c5c3b2fce133392fc9cf104a5533f03f6c10a29e6ead058104f73c4f2ae900"
+    },
+    {
+      "username": "brisa.demo",
+      "user_id": "user_brisa_001",
+      "tenant_id": "brisa_sistemas",
+      "roles": ["traveler"],
+      "salt": "brisa-demo-salt",
+      "password_hash": "d9f970abb3c375d0f1a5801af4dce8893640c96735d625deb081b0a4099507b6"
+    }
+  ]
+}

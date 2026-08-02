@@ -1,0 +1,79 @@
+{
+  "dataset_id": "onfly_retrieval_phase3",
+  "version": "v1",
+  "description": "Casos com resposta conhecida para comparar busca vetorial, BM25 e busca híbrida.",
+  "cases": [
+    {
+      "case_id": "aurora_food_active_v2",
+      "tenant_id": "aurora_tecnologia",
+      "question": "Qual é o limite diário de alimentação em viagem nacional?",
+      "expected_section": "Alimentação"
+    },
+    {
+      "case_id": "aurora_international_approval",
+      "tenant_id": "aurora_tecnologia",
+      "question": "Quem deve aprovar uma viagem internacional?",
+      "expected_section": "Solicitação e aprovação da viagem"
+    },
+    {
+      "case_id": "aurora_reimbursement_deadline",
+      "tenant_id": "aurora_tecnologia",
+      "question": "Qual é o prazo para solicitar reembolso?",
+      "expected_section": "Reembolso"
+    },
+    {
+      "case_id": "brisa_policy_violation",
+      "tenant_id": "brisa_sistemas",
+      "question": "O que acontece quando uma despesa viola a política?",
+      "expected_section": "Violações da política"
+    },
+    {
+      "case_id": "brisa_hotel_limit",
+      "tenant_id": "brisa_sistemas",
+      "question": "Qual é o valor máximo de hospedagem por noite?",
+      "expected_section": "Hospedagem"
+    },
+    {
+      "case_id": "brisa_expense_documents",
+      "tenant_id": "brisa_sistemas",
+      "question": "Quais comprovantes são exigidos na prestação de contas?",
+      "expected_section": "Documentos obrigatórios"
+    },
+    {
+      "case_id": "aurora_non_refundable_fares",
+      "tenant_id": "aurora_tecnologia",
+      "question": "O que fazer com tarifas não reembolsáveis?",
+      "expected_section": "Cancelamento"
+    },
+    {
+      "case_id": "aurora_cost_center",
+      "tenant_id": "aurora_tecnologia",
+      "question": "Quando devo informar o centro de custo correspondente?",
+      "expected_section": "Reembolso"
+    },
+    {
+      "case_id": "aurora_supplier_reason",
+      "tenant_id": "aurora_tecnologia",
+      "question": "Onde a regra exige fornecedor e motivo da despesa?",
+      "expected_section": "Documentos obrigatórios"
+    },
+    {
+      "case_id": "brisa_four_hour_window",
+      "tenant_id": "brisa_sistemas",
+      "question": "Qual regra usa uma janela de quatro horas?",
+      "expected_section": "Transporte aéreo"
+    },
+    {
+      "case_id": "brisa_night_transport",
+      "tenant_id": "brisa_sistemas",
+      "question": "Qual transporte pode ser usado entre 22h e 6h?",
+      "expected_section": "Transporte terrestre"
+    },
+    {
+      "case_id": "brisa_avoidable_fines",
+      "tenant_id": "brisa_sistemas",
+      "question": "Como são tratadas as multas evitáveis no centro de custo?",
+      "expected_section": "Cancelamento"
+    }
+  ]
+}
