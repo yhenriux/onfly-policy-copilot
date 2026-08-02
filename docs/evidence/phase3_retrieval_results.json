@@ -1,0 +1,122 @@
+{
+  "dataset_id": "onfly_retrieval_phase3",
+  "cases": 12,
+  "k": 5,
+  "configuration": {
+    "rrf_k": 60,
+    "dense_weight": 1.0,
+    "lexical_weight": 1.0
+  },
+  "metrics": {
+    "dense": {
+      "recall_at_k": 0.9167,
+      "mrr": 0.6556
+    },
+    "bm25": {
+      "recall_at_k": 0.9167,
+      "mrr": 0.8222
+    },
+    "hybrid": {
+      "recall_at_k": 0.9167,
+      "mrr": 0.8264
+    }
+  },
+  "details": [
+    {
+      "case_id": "aurora_food_active_v2",
+      "ranks": {
+        "dense": 1,
+        "bm25": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "case_id": "aurora_international_approval",
+      "ranks": {
+        "dense": 5,
+        "bm25": 5,
+        "hybrid": 6
+      }
+    },
+    {
+      "case_id": "aurora_reimbursement_deadline",
+      "ranks": {
+        "dense": 1,
+        "bm25": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "case_id": "brisa_policy_violation",
+      "ranks": {
+        "dense": 3,
+        "bm25": 6,
+        "hybrid": 4
+      }
+    },
+    {
+      "case_id": "brisa_hotel_limit",
+      "ranks": {
+        "dense": 1,
+        "bm25": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "case_id": "brisa_expense_documents",
+      "ranks": {
+        "dense": 3,
+        "bm25": 2,
+        "hybrid": 2
+      }
+    },
+    {
+      "case_id": "aurora_non_refundable_fares",
+      "ranks": {
+        "dense": 2,
+        "bm25": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "case_id": "aurora_cost_center",
+      "ranks": {
+        "dense": 1,
+        "bm25": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "case_id": "aurora_supplier_reason",
+      "ranks": {
+        "dense": 6,
+        "bm25": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "case_id": "brisa_four_hour_window",
+      "ranks": {
+        "dense": 3,
+        "bm25": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "case_id": "brisa_night_transport",
+      "ranks": {
+        "dense": 1,
+        "bm25": 1,
+        "hybrid": 1
+      }
+    },
+    {
+      "case_id": "brisa_avoidable_fines",
+      "ranks": {
+        "dense": 1,
+        "bm25": 1,
+        "hybrid": 1
+      }
+    }
+  ]
+}

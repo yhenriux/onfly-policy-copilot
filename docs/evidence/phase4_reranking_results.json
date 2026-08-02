@@ -1,0 +1,107 @@
+{
+  "dataset_id": "onfly_retrieval_phase3",
+  "cases": 12,
+  "k": 5,
+  "cross_encoder_model": "cross-encoder/ms-marco-MiniLM-L6-v2",
+  "cold_start_ms": 8808.93,
+  "comparison": {
+    "before": {
+      "recall_at_k": 0.9167,
+      "mrr": 0.8125,
+      "mean_latency_ms": 5.24,
+      "p95_latency_ms": 6.03
+    },
+    "after": {
+      "recall_at_k": 0.9167,
+      "mrr": 0.9167,
+      "mean_latency_ms": 205.8,
+      "p95_latency_ms": 227.36
+    }
+  },
+  "details": [
+    {
+      "case_id": "aurora_food_active_v2",
+      "rank_before": 1,
+      "rank_after": 1,
+      "retrieval_ms": 3.37,
+      "rerank_and_context_ms": 184.09
+    },
+    {
+      "case_id": "aurora_international_approval",
+      "rank_before": null,
+      "rank_after": 1,
+      "retrieval_ms": 5.47,
+      "rerank_and_context_ms": 198.69
+    },
+    {
+      "case_id": "aurora_reimbursement_deadline",
+      "rank_before": 1,
+      "rank_after": 1,
+      "retrieval_ms": 5.82,
+      "rerank_and_context_ms": 214.05
+    },
+    {
+      "case_id": "brisa_policy_violation",
+      "rank_before": 4,
+      "rank_after": 1,
+      "retrieval_ms": 5.42,
+      "rerank_and_context_ms": 189.55
+    },
+    {
+      "case_id": "brisa_hotel_limit",
+      "rank_before": 1,
+      "rank_after": 1,
+      "retrieval_ms": 5.39,
+      "rerank_and_context_ms": 189.91
+    },
+    {
+      "case_id": "brisa_expense_documents",
+      "rank_before": 2,
+      "rank_after": null,
+      "retrieval_ms": 5.4,
+      "rerank_and_context_ms": 207.33
+    },
+    {
+      "case_id": "aurora_non_refundable_fares",
+      "rank_before": 1,
+      "rank_after": 1,
+      "retrieval_ms": 6.03,
+      "rerank_and_context_ms": 210.94
+    },
+    {
+      "case_id": "aurora_cost_center",
+      "rank_before": 1,
+      "rank_after": 1,
+      "retrieval_ms": 5.9,
+      "rerank_and_context_ms": 218.72
+    },
+    {
+      "case_id": "aurora_supplier_reason",
+      "rank_before": 1,
+      "rank_after": 1,
+      "retrieval_ms": 5.82,
+      "rerank_and_context_ms": 221.55
+    },
+    {
+      "case_id": "brisa_four_hour_window",
+      "rank_before": 1,
+      "rank_after": 1,
+      "retrieval_ms": 5.45,
+      "rerank_and_context_ms": 181.58
+    },
+    {
+      "case_id": "brisa_night_transport",
+      "rank_before": 1,
+      "rank_after": 1,
+      "retrieval_ms": 3.5,
+      "rerank_and_context_ms": 186.42
+    },
+    {
+      "case_id": "brisa_avoidable_fines",
+      "rank_before": 1,
+      "rank_after": 1,
+      "retrieval_ms": 5.36,
+      "rerank_and_context_ms": 203.86
+    }
+  ]
+}

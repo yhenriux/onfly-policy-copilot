@@ -1,0 +1,40 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Python environments
+.venv/
+venv/
+env/
+
+# Python caches and build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Test, type-checking and lint caches
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local runtime artifacts
+*.log
+logs/
+qdrant_storage/
+.local/
+.tmp_presentation/
+*.pptx.inspect.ndjson
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

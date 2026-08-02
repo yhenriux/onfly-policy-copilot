@@ -1,0 +1,58 @@
+name: Qualidade e segurança
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.15"
+          enable-cache: true
+
+      - name: Instalar Python
+        run: uv python install 3.12.11
+
+      - name: Instalar dependências fixadas
+        run: uv sync --frozen --dev
+
+      - name: Verificar formatação
+        run: uv run ruff format --check app tests scripts
+
+      - name: Verificar qualidade do código
+        run: uv run ruff check app tests scripts
+
+      - name: Verificar tipos
+        run: uv run mypy app tests scripts
+
+      - name: Executar testes completos
+        run: uv run pytest
+
+      - name: Repetir testes críticos de segurança
+        run: uv run pytest tests/security
+
+      - name: Validar versões do artefato
+        run: uv run python -m scripts.check_release_versions
+
+      - name: Bloquear regressão de qualidade
+        run: >-
+          uv run python -m scripts.check_regression
+          --report docs/evidence/phase7_golden_results.json
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir imagem reproduzível
+        run: docker build --tag onfly-policy-copilot:1.0.0 .

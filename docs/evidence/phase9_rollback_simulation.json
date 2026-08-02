@@ -1,0 +1,24 @@
+{
+  "scenario": "candidate_health_failure",
+  "failure_detected": true,
+  "rollback_performed": true,
+  "final_version": "0.9.0",
+  "final_health": true,
+  "events": [
+    {
+      "action": "deploy",
+      "version": "0.9.0",
+      "health": true
+    },
+    {
+      "action": "deploy_candidate",
+      "version": "0.9.1-broken",
+      "health": false
+    },
+    {
+      "action": "rollback",
+      "version": "0.9.0",
+      "health": true
+    }
+  ]
+}
