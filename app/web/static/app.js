@@ -1,5 +1,9 @@
 "use strict";
 
+// Ao abrir o HTML diretamente, as chamadas continuam apontando para a API local.
+// Quando a interface vem do FastAPI, uma string vazia mantém o mesmo endereço e porta.
+const API_BASE_URL = window.location.protocol === "file:" ? "http://localhost:8000" : "";
+
 // Credenciais públicas e sintéticas usadas somente na demonstração local.
 const identities = {
   aurora: {
@@ -69,7 +73,7 @@ async function api(path, options = {}, timeoutMs = 70000) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   if (state.token) headers.Authorization = `Bearer ${state.token}`;
   try {
-    return await fetch(path, { ...options, headers, signal: controller.signal });
+    return await fetch(`${API_BASE_URL}${path}`, { ...options, headers, signal: controller.signal });
   } finally {
     window.clearTimeout(timeout);
   }
@@ -323,5 +327,9 @@ elements.copyRequest.addEventListener("click", async () => {
 });
 
 buildExamples();
+if (API_BASE_URL) {
+  document.querySelector("#swagger-link").href = `${API_BASE_URL}/docs`;
+  document.querySelector("#metrics-link").href = `${API_BASE_URL}/metrics`;
+}
 checkOperations();
 window.setInterval(checkOperations, 30000);
