@@ -136,7 +136,7 @@ async def test_service_reports_absence_without_calling_generation() -> None:
     assert provider.generation_calls == 0
 
 
-async def test_service_accepts_model_reported_absence() -> None:
+async def test_service_preserves_source_when_model_misses_strong_evidence() -> None:
     provider = _Provider(
         GenerationOutput(
             answer="A política não contém essa informação.",
@@ -146,8 +146,8 @@ async def test_service_accepts_model_reported_absence() -> None:
     )
     service = AskService(provider=provider, retriever=_Retriever([_chunk()]), retrieval_limit=5)
     response = await service.ask(_request(), _context())
-    assert response.sources == []
-    assert response.generation.status == "no_evidence"
+    assert response.sources[0].chunk_id == "chunk_001"
+    assert response.generation.status == "degraded"
 
 
 async def test_service_uses_controlled_fallback_on_generation_failure() -> None:

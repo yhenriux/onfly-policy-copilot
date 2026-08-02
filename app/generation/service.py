@@ -120,14 +120,9 @@ class AskService:
         """Aceita somente fontes que realmente estavam no contexto autorizado."""
 
         if not result.output.evidence_found:
-            return AskResponse(
-                answer="Não encontrei evidências suficientes nas políticas autorizadas.",
-                sources=[],
-                confidence="low",
-                request_id=current_trace().request_id,
-                latency_ms=_elapsed_ms(started_at),
-                generation=_metadata(result, status="no_evidence"),
-            )
+            # O retrieval já validou que existe evidência acima do limite mínimo.
+            # Se o modelo pequeno não conseguir usá-la, mostramos a fonte sem inventar.
+            return self._degraded_response(chunks[0], started_at, attempts=result.attempts)
         if any(position > len(chunks) for position in result.output.cited_source_positions):
             raise InvalidGenerationOutputError("A geração citou uma posição não autorizada")
         positions = dict.fromkeys(result.output.cited_source_positions)

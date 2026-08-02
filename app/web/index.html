@@ -5,51 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Demonstração do assistente de políticas corporativas da Onfly." />
     <title>Onfly Policy Copilot</title>
+    <script>
+      // A demonstração depende da API. Abrir o arquivo redireciona para o endereço correto.
+      if (window.location.protocol === "file:") window.location.replace("http://localhost:8000/");
+    </script>
     <link rel="stylesheet" href="./static/styles.css" />
     <script src="./static/app.js" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Ir para o conteúdo</a>
     <header class="topbar">
-      <div class="brand" aria-label="Onfly Policy Copilot">
-        <span class="brand-mark" aria-hidden="true">O</span>
-        <div><strong>Policy Copilot</strong><span>Demonstração técnica Onfly</span></div>
-      </div>
+      <a class="brand" href="/" aria-label="Onfly Policy Copilot">
+        <span class="onfly-logo">onfly<span class="logo-globe" aria-hidden="true">◎</span></span>
+        <span class="brand-divider" aria-hidden="true"></span>
+        <span class="product-name">Policy Copilot <small>case técnico</small></span>
+      </a>
       <div class="topbar-actions">
         <div class="system-status" id="system-status" aria-live="polite">
           <span class="status-dot checking"></span><span>Verificando serviços</span>
         </div>
-        <button class="ghost-button hidden" id="logout-button" type="button">Trocar empresa</button>
+        <a class="header-link" href="./docs" id="swagger-link" target="_blank" rel="noreferrer">API</a>
+        <button class="outline-button hidden" id="logout-button" type="button">Trocar empresa</button>
       </div>
     </header>
 
     <main id="main-content">
       <section class="login-view" id="login-view">
         <div class="hero-copy">
-          <span class="eyebrow">Ambiente seguro com dados sintéticos</span>
-          <h1>Consulte políticas de viagem com respostas rastreáveis.</h1>
-          <p>Escolha uma identidade fictícia. A autenticação define quais documentos podem ser consultados.</p>
-          <div class="trust-row"><span>Busca híbrida</span><span>Isolamento por tenant</span><span>Modelo local</span></div>
+          <span class="eyebrow"><span aria-hidden="true">✦</span> Assistente corporativo com IA local</span>
+          <h1>Política de viagem <em>não precisa</em> dar trabalho.</h1>
+          <p>Consulte regras corporativas com resposta fundamentada, fonte visível e isolamento completo entre empresas.</p>
+          <div class="trust-row" aria-label="Características da solução">
+            <span>✓ Busca híbrida</span><span>✓ Tenant isolado</span><span>✓ Llama 3.2 local</span>
+          </div>
+          <div class="hero-proof">
+            <span class="proof-number">2</span>
+            <span><strong>empresas sintéticas</strong><small>Regras conflitantes para provar o isolamento</small></span>
+          </div>
         </div>
+
         <div class="identity-panel" aria-labelledby="identity-title">
+          <div class="panel-kicker">ACESSO DEMONSTRATIVO</div>
           <div class="panel-heading">
-            <span class="step-number">1</span>
-            <div><h2 id="identity-title">Escolha uma empresa fictícia</h2><p>As credenciais são preenchidas somente para esta demonstração.</p></div>
+            <div><h2 id="identity-title">Escolha uma empresa fictícia</h2><p>A identidade define quais políticas podem ser consultadas.</p></div>
+            <span class="step-number">01</span>
           </div>
           <div class="identity-grid">
-            <button class="identity-card" type="button" data-identity="aurora">
+            <button class="identity-card aurora-card" type="button" data-identity="aurora">
               <span class="identity-icon aurora">AT</span>
               <span class="identity-copy"><strong>Aurora Tecnologia</strong><small>Políticas corporativas mais flexíveis</small><code>aurora.demo</code></span>
               <span class="arrow" aria-hidden="true">→</span>
             </button>
-            <button class="identity-card" type="button" data-identity="brisa">
+            <button class="identity-card brisa-card" type="button" data-identity="brisa">
               <span class="identity-icon brisa">BS</span>
               <span class="identity-copy"><strong>Brisa Sistemas</strong><small>Regras e limites mais restritivos</small><code>brisa.demo</code></span>
               <span class="arrow" aria-hidden="true">→</span>
             </button>
           </div>
           <div class="inline-alert error hidden" id="login-error" role="alert"></div>
-          <p class="privacy-note">O token não é exibido nem salvo. Ele permanece somente na memória desta aba.</p>
+          <div class="privacy-note"><span aria-hidden="true">◉</span><span><strong>Ambiente seguro.</strong> As credenciais são sintéticas e o token não é armazenado.</span></div>
         </div>
       </section>
 
@@ -58,25 +72,26 @@
           <div class="tenant-card">
             <span class="identity-icon" id="session-icon">AT</span>
             <div><span class="muted-label">Empresa autenticada</span><strong id="session-company"></strong><code id="session-tenant"></code></div>
+            <span class="verified-badge" title="Tenant validado">✓</span>
           </div>
-          <div class="demo-guide">
+          <nav class="demo-guide" aria-label="Roteiro da demonstração">
             <span class="muted-label">Roteiro de 5 minutos</span>
-            <ol><li class="active"><span>1</span>Escolha a empresa</li><li><span>2</span>Faça a mesma pergunta</li><li><span>3</span>Compare regras e fontes</li><li><span>4</span>Abra o trace técnico</li><li><span>5</span>Envie um feedback</li></ol>
-          </div>
-          <div class="security-note"><strong>Isolamento ativo</strong><p>O tenant vem somente do token assinado. O navegador não escolhe esse valor.</p></div>
+            <ol><li class="active"><span>1</span>Empresa autenticada</li><li><span>2</span>Faça uma pergunta</li><li><span>3</span>Confira as fontes</li><li><span>4</span>Abra o trace técnico</li><li><span>5</span>Envie seu feedback</li></ol>
+          </nav>
+          <div class="security-note"><span class="security-icon">✓</span><div><strong>Isolamento ativo</strong><p>O tenant vem do token assinado, nunca do navegador.</p></div></div>
         </aside>
 
         <div class="content-column">
           <section class="query-card" aria-labelledby="query-title">
             <div class="query-heading">
-              <div><span class="eyebrow">Consulta fundamentada</span><h1 id="query-title">O que você quer saber sobre a política?</h1></div>
-              <span class="model-badge">llama3.2:1b · local</span>
+              <div><span class="eyebrow">CONSULTA FUNDAMENTADA</span><h1 id="query-title">O que você quer saber?</h1><p>Faça uma pergunta sobre viagem, hotel, alimentação ou reembolso.</p></div>
+              <span class="model-badge"><span></span> llama3.2:1b · local</span>
             </div>
             <form id="ask-form">
-              <label for="question">Pergunta</label>
+              <label for="question">Sua pergunta</label>
               <div class="question-box">
                 <textarea id="question" name="question" minlength="3" maxlength="2000" rows="3" placeholder="Ex.: Qual é o limite diário de alimentação em viagem nacional?" required></textarea>
-                <button class="primary-button" id="ask-button" type="submit"><span>Perguntar</span><span aria-hidden="true">↑</span></button>
+                <button class="primary-button" id="ask-button" type="submit"><span>Perguntar</span><span aria-hidden="true">→</span></button>
               </div>
               <div class="question-footer"><div class="examples" id="examples" aria-label="Perguntas de exemplo"></div><span id="character-count">0 / 2.000</span></div>
             </form>
@@ -93,12 +108,12 @@
               <summary><span>Rastreabilidade técnica</span><span class="trace-summary" id="trace-summary"></span></summary>
               <div class="trace-content"><div class="trace-grid" id="trace-grid"></div><div class="request-row"><span>Identificador da requisição</span><code id="request-id"></code><button id="copy-request" type="button">Copiar</button></div></div>
             </details>
-            <div class="feedback-row" id="feedback-row"><div><strong>Esta resposta foi útil?</strong><span>Seu feedback fica ligado ao request_id.</span></div><div class="feedback-actions"><button type="button" data-rating="positive" aria-label="Resposta útil">👍 Sim</button><button type="button" data-rating="negative" aria-label="Resposta não foi útil">👎 Não</button></div></div>
+            <div class="feedback-row" id="feedback-row"><div><strong>Esta resposta foi útil?</strong><span>Seu feedback fica ligado ao request_id.</span></div><div class="feedback-actions"><button type="button" data-rating="positive" aria-label="Resposta útil">Sim</button><button type="button" data-rating="negative" aria-label="Resposta não foi útil">Não</button></div></div>
             <div class="feedback-confirmation hidden" id="feedback-confirmation" role="status"></div>
           </section>
         </div>
       </section>
     </main>
-    <footer><span>Dados inteiramente sintéticos · Release 1.0.0</span><nav><a id="swagger-link" href="./docs" target="_blank" rel="noreferrer">Swagger</a><a id="metrics-link" href="./metrics" target="_blank" rel="noreferrer">Métricas</a></nav></footer>
+    <footer><span><strong>onfly</strong> · Dados inteiramente sintéticos · Release 1.0.0</span><nav><a id="metrics-link" href="./metrics" target="_blank" rel="noreferrer">Métricas</a><a href="https://github.com/yhenriux" target="_blank" rel="noreferrer">GitHub</a></nav></footer>
   </body>
 </html>
