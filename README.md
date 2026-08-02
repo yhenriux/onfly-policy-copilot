@@ -83,8 +83,14 @@ Leia a descrição completa em [Pipeline RAG](docs/rag-pipeline-explicacao-local
 | Qdrant | persistência e busca vetorial |
 | BM25 e RRF | busca por palavras e combinação de rankings |
 | CrossEncoder | reordenação dos trechos por relevância |
+| LangChain | interfaces intercambiáveis para Ollama, modelos e embeddings |
+| LangGraph | orquestração determinística das etapas da consulta |
+| LangSmith | tracing opcional, avaliação e observação protegida |
+| LlamaIndex | representação dos documentos e adaptador do Qdrant |
 | pytest, Ruff e mypy | testes, qualidade e verificação de tipos |
 | Docker Compose | API e Qdrant reproduzíveis |
+
+Os quatro frameworks complementam o código próprio do projeto; regras de segurança, isolamento por empresa, busca híbrida, RRF e re-ranking continuam sob controle da aplicação. Veja [Integração de frameworks](docs/rag-frameworks-integracao-tecnica-v1.md) para responsabilidades, configuração e limites.
 
 ## Pré-requisitos
 
