@@ -208,6 +208,7 @@ tests/               testes unitários, integrados e de segurança
 
 - [Arquitetura](docs/architecture.md)
 - [Pipeline RAG](docs/rag-pipeline.md)
+- [Prova de conceito](docs/proof-of-concept.md)
 - [Ameaças e controles](docs/threat-model.md)
 - [Plano e métricas de avaliação](docs/evaluation-plan.md)
 - [Operação e investigação de incidentes](docs/runbook.md)
