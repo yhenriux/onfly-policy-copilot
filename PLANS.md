@@ -516,7 +516,7 @@ Empacotar a API, automatizar os gates de qualidade e permitir retorno seguro par
 ### Decisões e limitações
 
 - O Ollama fica fora do Compose para reutilizar a instalação e os modelos locais existentes.
-- A estação atual não possui Docker; portanto, o build real não pôde ser executado localmente e é um gate obrigatório do CI.
+- O Docker Desktop 4.84.0 foi instalado e o build real de `onfly-policy-copilot:1.0.0` foi concluído localmente. O CI mantém o mesmo build como gate remoto obrigatório.
 - A coleção antiga deve permanecer disponível durante a janela de rollback.
 - O pipeline foi criado localmente, mas somente executará no provedor depois que o repositório for publicado no Git.
 

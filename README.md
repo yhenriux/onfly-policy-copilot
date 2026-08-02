@@ -253,7 +253,7 @@ O pipeline em `.github/workflows/ci.yml` bloqueia formatação, lint, tipos, tes
 - [Deploy e rollback](docs/deployment-and-rollback.md)
 - [Migração segura do índice](docs/index-migration.md)
 
-Nesta estação o Docker não está instalado. Por isso, os contratos dos artefatos foram testados localmente e o build real ficou como gate obrigatório do CI.
+O Docker Desktop 4.84.0 foi validado nesta estação. O Compose passou na validação e o build real da imagem `onfly-policy-copilot:1.0.0` foi concluído localmente. O CI repete esse build para garantir que o resultado continue reproduzível fora da máquina de desenvolvimento.
 
 ## Front-end demonstrativo
 
