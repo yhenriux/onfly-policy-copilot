@@ -23,9 +23,10 @@ const identities = {
 };
 
 const exampleQuestions = [
-  "Qual é o limite diário de alimentação em viagem nacional?",
-  "Em quanto tempo devo solicitar o reembolso?",
-  "Qual é o limite permitido para hotel?",
+  "Posso despachar uma mala nesta viagem?",
+  "Quanto posso gastar com hotel?",
+  "Como peço o reembolso?",
+  "Posso usar aplicativo de transporte?",
 ];
 
 const state = { token: null, identity: null, context: null, requestId: null };
@@ -37,7 +38,7 @@ const elements = {
   systemStatus: document.querySelector("#system-status"),
   sessionIcon: document.querySelector("#session-icon"),
   sessionCompany: document.querySelector("#session-company"),
-  sessionTenant: document.querySelector("#session-tenant"),
+  sessionContext: document.querySelector("#session-context"),
   askForm: document.querySelector("#ask-form"),
   askButton: document.querySelector("#ask-button"),
   question: document.querySelector("#question"),
@@ -89,15 +90,15 @@ async function checkOperations() {
     const data = await response.json();
     if (response.ok) {
       dot.className = "status-dot";
-      label.textContent = "Ollama e Qdrant prontos";
+      label.textContent = "Tudo pronto para começar";
     } else {
       const unavailable = Object.entries(data.dependencies || {}).filter(([, ready]) => !ready).map(([name]) => name).join(" e ");
       dot.className = "status-dot down";
-      label.textContent = `${unavailable || "Serviço"} indisponível`;
+      label.textContent = "Alguns recursos estão indisponíveis";
     }
   } catch {
     dot.className = "status-dot down";
-    label.textContent = "API indisponível";
+    label.textContent = "Assistente indisponível";
   }
 }
 
@@ -110,7 +111,7 @@ async function login(identityKey) {
       method: "POST",
       body: JSON.stringify({ username: identity.username, password: identity.password }),
     }, 10000);
-    if (!response.ok) throw new Error("Não foi possível autenticar a identidade sintética.");
+    if (!response.ok) throw new Error("Não foi possível acessar este perfil agora.");
     const data = await response.json();
     state.token = data.access_token;
     state.identity = identity;
@@ -128,7 +129,7 @@ function showWorkspace() {
   elements.sessionIcon.textContent = state.identity.initials;
   elements.sessionIcon.className = `identity-icon ${state.identity.className}`;
   elements.sessionCompany.textContent = state.identity.company;
-  elements.sessionTenant.textContent = state.context.tenant_id;
+  elements.sessionContext.textContent = state.context.tenant_id;
   setHidden(elements.loginView, true);
   setHidden(elements.workspace, false);
   setHidden(elements.logoutButton, false);
@@ -163,7 +164,7 @@ function hideState() {
 }
 
 function startLoading() {
-  const steps = ["Gerando o vetor da pergunta...", "Buscando políticas autorizadas...", "Reordenando as melhores fontes...", "Gerando uma resposta fundamentada..."];
+  const steps = ["Entendendo sua dúvida...", "Procurando nos documentos da empresa...", "Conferindo as informações encontradas...", "Preparando uma resposta clara..."];
   let index = 0;
   elements.loadingStep.textContent = steps[0];
   setHidden(elements.loadingCard, false);
@@ -198,9 +199,9 @@ async function askQuestion(event) {
     renderResponse(data);
   } catch (error) {
     if (error.name === "AbortError") {
-      showState("warning", "A consulta excedeu o tempo esperado", "O Ollama pode estar carregando o modelo. Aguarde alguns segundos e tente novamente.");
+      showState("warning", "A resposta está demorando mais que o normal", "Aguarde alguns segundos e tente novamente. O assistente pode estar iniciando.");
     } else {
-      showState("error", "Não foi possível acessar a API", "Verifique se a aplicação está em execução e tente novamente.");
+      showState("error", "Não conseguimos conectar ao assistente", "Confira se os serviços estão ligados e tente novamente.");
     }
   } finally {
     stopLoading(loadingInterval);
@@ -209,15 +210,15 @@ async function askQuestion(event) {
 
 function handleApiError(status, detail) {
   if (status === 400) {
-    showState("warning", "Pergunta bloqueada por segurança", detail || "A pergunta contém uma instrução não permitida.");
+    showState("warning", "Não podemos responder a esse pedido", detail || "Tente escrever apenas uma dúvida sobre viagens ou despesas da empresa.");
   } else if (status === 401) {
     showState("error", "Sessão expirada", "Escolha novamente uma empresa fictícia para continuar.");
     window.setTimeout(logout, 1600);
   } else if (status === 503) {
-    showState("error", "Serviço temporariamente indisponível", detail || "Ollama ou Qdrant não respondeu. Consulte o estado operacional no topo.");
+    showState("error", "Assistente temporariamente indisponível", "Aguarde um momento e tente novamente. Se o problema continuar, procure o suporte.");
     checkOperations();
   } else {
-    showState("error", "A consulta não pôde ser concluída", detail || "Revise a pergunta e tente novamente.");
+    showState("error", "Não conseguimos concluir a busca", detail || "Tente escrever a pergunta de outra forma.");
   }
 }
 
@@ -230,16 +231,16 @@ function renderResponse(data) {
   setHidden(elements.feedbackRow, false);
   setHidden(elements.responseCard, false);
   if (data.generation.status === "no_evidence" || !(data.sources || []).length) {
-    showState("info", "Nenhuma evidência suficiente foi encontrada", "O assistente recusou responder sem apoio nas políticas autorizadas.");
+    showState("info", "Não encontramos essa informação", "Tente dar mais detalhes ou procure a equipe responsável por viagens da sua empresa.");
   } else if (data.generation.status === "degraded") {
-    showState("warning", "Resposta em modo degradado", "A geração falhou, então a melhor fonte foi apresentada sem inventar uma resposta.");
+    showState("warning", "Mostramos a orientação original", "Para evitar uma interpretação imprecisa, exibimos o texto encontrado diretamente no documento da empresa.");
   }
   elements.responseCard.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderConfidence(confidence) {
-  const labels = { high: "Confiança alta", medium: "Confiança média", low: "Confiança baixa" };
-  elements.confidenceBadge.textContent = labels[confidence] || "Confiança não informada";
+  const labels = { high: "Boa correspondência", medium: "Correspondência parcial", low: "Confira com sua empresa" };
+  elements.confidenceBadge.textContent = labels[confidence] || "Correspondência não informada";
   elements.confidenceBadge.className = `confidence ${confidence}`;
 }
 
@@ -257,11 +258,11 @@ function renderSources(sources) {
     title.textContent = source.title;
     const meta = document.createElement("span");
     meta.className = "source-meta";
-    meta.textContent = `${source.section} · ${source.version} · ${source.chunk_id}`;
+    meta.textContent = `${source.section} · versão ${source.version.replace("v", "")}`;
     content.append(title, meta);
     const score = document.createElement("span");
     score.className = "source-score";
-    score.textContent = `score ${Number(source.score).toFixed(3)}`;
+    score.textContent = `${Math.round(Number(source.score) * 100)}% relevante`;
     card.append(accent, content, score);
     elements.sourcesList.append(card);
   });
@@ -292,11 +293,11 @@ async function sendFeedback(rating) {
   try {
     const response = await api("/v1/feedback", { method: "POST", body: JSON.stringify({ request_id: state.requestId, rating }) }, 10000);
     if (!response.ok) throw new Error();
-    elements.feedbackConfirmation.textContent = rating === "positive" ? "Obrigado. A resposta foi marcada como útil." : "Obrigado. A resposta foi marcada para revisão.";
+    elements.feedbackConfirmation.textContent = rating === "positive" ? "Obrigado pela avaliação!" : "Obrigado. Vamos usar sua avaliação para melhorar.";
     setHidden(elements.feedbackConfirmation, false);
     setHidden(elements.feedbackRow, true);
   } catch {
-    showState("error", "Feedback não enviado", "A resposta continua disponível. Tente avaliar novamente.");
+    showState("error", "Não foi possível enviar sua avaliação", "A resposta continua disponível. Tente novamente em alguns instantes.");
     elements.feedbackRow.querySelectorAll("button").forEach((button) => { button.disabled = false; });
   }
 }

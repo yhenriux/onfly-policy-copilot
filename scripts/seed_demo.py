@@ -6,7 +6,7 @@ from pathlib import Path
 from app.core.config import get_settings
 from app.generation.ollama_provider import OllamaProvider
 from app.ingestion.chunker import ChunkingConfig
-from app.ingestion.loaders import load_manifest
+from app.ingestion.loaders import load_catalog, load_manifest
 from app.ingestion.pipeline import ingest_document
 from app.retrieval.factory import build_vector_store
 
@@ -16,7 +16,8 @@ async def seed_demo() -> list[str]:
 
     project_root = Path(__file__).resolve().parents[1]
     manifest_paths = sorted((project_root / "data" / "tenants").glob("*/metadata*.json"))
-    if not manifest_paths:
+    catalog_paths = sorted((project_root / "data" / "tenants").glob("*/knowledge/catalog.json"))
+    if not manifest_paths and not catalog_paths:
         raise FileNotFoundError("Nenhum manifesto de política foi encontrado")
     settings = get_settings()
     provider = OllamaProvider(
@@ -33,8 +34,10 @@ async def seed_demo() -> list[str]:
 
     try:
         messages: list[str] = []
-        for manifest_path in manifest_paths:
-            document = load_manifest(manifest_path)
+        documents = [load_manifest(path) for path in manifest_paths]
+        for catalog_path in catalog_paths:
+            documents.extend(load_catalog(catalog_path))
+        for document in documents:
             result = await ingest_document(
                 document,
                 provider=provider,

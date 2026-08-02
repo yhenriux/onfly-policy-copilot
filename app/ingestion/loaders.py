@@ -5,7 +5,7 @@ from datetime import date
 from pathlib import Path
 
 from app.domain.models import LoadedDocument
-from app.domain.schemas import DocumentManifest
+from app.domain.schemas import DocumentManifest, KnowledgeCatalog
 
 
 def load_markdown(
@@ -51,3 +51,22 @@ def load_manifest(manifest_path: Path) -> LoadedDocument:
         valid_from=manifest.valid_from,
         valid_until=manifest.valid_until,
     )
+
+
+def load_catalog(catalog_path: Path) -> list[LoadedDocument]:
+    """Lê um catálogo e carrega cada documento curto na ordem declarada."""
+
+    raw_catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    catalog = KnowledgeCatalog.model_validate(raw_catalog)
+    return [
+        load_markdown(
+            catalog_path.parent / entry.file,
+            tenant_id=catalog.tenant_id,
+            document_id=entry.document_id,
+            title=entry.title,
+            version=entry.version,
+            valid_from=entry.valid_from,
+            valid_until=entry.valid_until,
+        )
+        for entry in catalog.documents
+    ]

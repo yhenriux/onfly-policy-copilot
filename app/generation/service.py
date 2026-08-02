@@ -123,6 +123,10 @@ class AskService:
             # O retrieval já validou que existe evidência acima do limite mínimo.
             # Se o modelo pequeno não conseguir usá-la, mostramos a fonte sem inventar.
             return self._degraded_response(chunks[0], started_at, attempts=result.attempts)
+        if result.output.confidence == "low":
+            # Modelos pequenos podem produzir uma conclusão curta e errada mesmo com a fonte certa.
+            # Nesse caso, a aplicação mostra o texto autorizado em vez de confiar na interpretação.
+            return self._degraded_response(chunks[0], started_at, attempts=result.attempts)
         if any(position > len(chunks) for position in result.output.cited_source_positions):
             raise InvalidGenerationOutputError("A geração citou uma posição não autorizada")
         positions = dict.fromkeys(result.output.cited_source_positions)
@@ -160,10 +164,7 @@ class AskService:
         """Evita inventar uma resposta quando a geração não está disponível."""
 
         return AskResponse(
-            answer=(
-                "Não foi possível gerar a resposta agora. "
-                "Consulte a fonte mais relevante indicada abaixo."
-            ),
+            answer=f"Esta é a orientação encontrada na política:\n\n{chunk.text}",
             sources=[_source(chunk)],
             confidence="low",
             request_id=current_trace().request_id,

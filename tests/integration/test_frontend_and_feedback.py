@@ -49,7 +49,10 @@ async def test_frontend_and_static_assets_are_served() -> None:
         styles = await client.get("/static/styles.css")
 
     assert page.status_code == 200
-    assert "Escolha uma empresa fictícia" in page.text
+    assert "Em qual empresa você trabalha?" in page.text
+    assert "50" in page.text
+    assert "regras conflitantes" not in page.text.lower()
+    assert "tenant" not in page.text.lower()
     assert script.status_code == 200
     assert "textContent" in script.text
     assert styles.status_code == 200

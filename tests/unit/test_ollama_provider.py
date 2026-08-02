@@ -73,7 +73,7 @@ async def test_provider_generates_embeddings_and_structured_answer() -> None:
     assert embeddings == [[0.1, 0.2, 0.3]]
     assert result.output.answer == "Prazo de 10 dias úteis."
     assert result.output.cited_source_positions == [1]
-    assert result.prompt_version == "policy_answer_v1"
+    assert result.prompt_version == "policy_answer_v2"
     assert result.attempts == 1
 
 

@@ -7,7 +7,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from app.ingestion.chunker import chunk_by_section
-from app.ingestion.loaders import load_manifest
+from app.ingestion.loaders import load_catalog, load_manifest
 from app.ingestion.normalizer import normalize_document
 
 
@@ -68,6 +68,20 @@ def test_question_catalog_covers_all_planned_categories() -> None:
         "adversarial",
     }
     assert len({case.case_id for case in catalog.cases}) == len(catalog.cases)
+
+
+def test_knowledge_base_has_50_organized_documents() -> None:
+    catalogs = sorted((_project_root() / "data" / "tenants").glob("*/knowledge/catalog.json"))
+    documents = [document for catalog in catalogs for document in load_catalog(catalog)]
+
+    assert len(catalogs) == 2
+    assert len(documents) == 50
+    assert {document.tenant_id for document in documents} == {
+        "aurora_tecnologia",
+        "brisa_sistemas",
+    }
+    assert all(document.text.startswith("# ") for document in documents)
+    assert len({(document.tenant_id, document.document_id) for document in documents}) == 50
 
 
 def test_same_question_has_conflicting_expected_answers() -> None:

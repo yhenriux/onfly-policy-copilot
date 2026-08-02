@@ -156,3 +156,45 @@ class DocumentManifest(BaseModel):
         if self.valid_until is not None and self.valid_until < self.valid_from:
             raise ValueError("valid_until não pode ser anterior a valid_from")
         return self
+
+
+class KnowledgeDocumentEntry(BaseModel):
+    """Identifica um documento curto dentro de um catálogo de conhecimento."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    document_id: str = Field(min_length=1, pattern=r"^[a-z0-9_\-]+$")
+    title: str = Field(min_length=3)
+    version: str = Field(pattern=r"^v[1-9][0-9]*$")
+    valid_from: date
+    valid_until: date | None = None
+    file: str = Field(min_length=1, pattern=r"^[^\\/]+\.md$")
+
+    @model_validator(mode="after")
+    def validate_validity_period(self) -> Self:
+        """Impede um período de validade invertido."""
+
+        if self.valid_until is not None and self.valid_until < self.valid_from:
+            raise ValueError("valid_until não pode ser anterior a valid_from")
+        return self
+
+
+class KnowledgeCatalog(BaseModel):
+    """Agrupa documentos curtos pertencentes à mesma empresa fictícia."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    tenant_id: str = Field(min_length=1, pattern=r"^[a-z0-9_\-]+$")
+    documents: list[KnowledgeDocumentEntry] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_unique_entries(self) -> Self:
+        """Evita IDs e arquivos repetidos no mesmo catálogo."""
+
+        document_ids = [document.document_id for document in self.documents]
+        files = [document.file for document in self.documents]
+        if len(document_ids) != len(set(document_ids)):
+            raise ValueError("document_id repetido no catálogo")
+        if len(files) != len(set(files)):
+            raise ValueError("arquivo repetido no catálogo")
+        return self

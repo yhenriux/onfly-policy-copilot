@@ -148,6 +148,7 @@ async def test_service_preserves_source_when_model_misses_strong_evidence() -> N
     response = await service.ask(_request(), _context())
     assert response.sources[0].chunk_id == "chunk_001"
     assert response.generation.status == "degraded"
+    assert "Prazo de 10 dias úteis." in response.answer
 
 
 async def test_service_uses_controlled_fallback_on_generation_failure() -> None:

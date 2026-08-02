@@ -6,7 +6,7 @@ Texto livre não permite confirmar fontes, confiança ou ausência de evidência
 
 ## Decisão
 
-Usar uma interface comum de provedor. O Ollama devolve JSON validado pelo Pydantic com resposta, posições das fontes e confiança. O prompt recebe a versão `policy_answer_v1`.
+Usar uma interface comum de provedor. O Ollama devolve JSON validado pelo Pydantic com resposta, posições das fontes e confiança. O prompt atual é `policy_answer_v2`. Quando o modelo pequeno indicar baixa confiança, a aplicação mostra diretamente a orientação recuperada em vez de exibir uma interpretação possivelmente incorreta.
 
 Falhas transitórias usam novas tentativas com espera crescente. Falha final de geração devolve uma resposta degradada sem afirmação factual. Falha de embedding mantém HTTP 503, pois não existe recuperação segura sem o vetor da pergunta.
 

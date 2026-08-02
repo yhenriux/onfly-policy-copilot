@@ -7,6 +7,7 @@ O projeto usa somente dados sintéticos e não representa um produto oficial da 
 ## O que a solução demonstra
 
 - autenticação com duas identidades fictícias;
+- base de conhecimento com 50 documentos curtos sobre dúvidas comuns de viagem;
 - isolamento de documentos por empresa, também chamada de tenant;
 - ingestão versionada e sem duplicação;
 - busca vetorial com Qdrant e busca por palavras com BM25;
@@ -160,7 +161,7 @@ app/
 data/
 ├── auth/            usuários sintéticos
 ├── evaluation/      perguntas, golden dataset e limites
-└── tenants/         políticas versionadas das duas empresas
+└── tenants/         políticas e documentos de ajuda das duas empresas
 docs/
 ├── adr/             decisões arquiteturais relevantes
 ├── evidence/        resultados reproduzíveis

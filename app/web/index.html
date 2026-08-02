@@ -18,102 +18,102 @@
       <a class="brand" href="/" aria-label="Onfly Policy Copilot">
         <span class="onfly-logo">onfly<span class="logo-globe" aria-hidden="true">◎</span></span>
         <span class="brand-divider" aria-hidden="true"></span>
-        <span class="product-name">Policy Copilot <small>case técnico</small></span>
+        <span class="product-name">Assistente de viagens <small>suporte às políticas</small></span>
       </a>
       <div class="topbar-actions">
         <div class="system-status" id="system-status" aria-live="polite">
           <span class="status-dot checking"></span><span>Verificando serviços</span>
         </div>
-        <a class="header-link" href="./docs" id="swagger-link" target="_blank" rel="noreferrer">API</a>
-        <button class="outline-button hidden" id="logout-button" type="button">Trocar empresa</button>
+        <a class="header-link" href="./docs" id="swagger-link" target="_blank" rel="noreferrer">Área técnica</a>
+        <button class="outline-button hidden" id="logout-button" type="button">Sair</button>
       </div>
     </header>
 
     <main id="main-content">
       <section class="login-view" id="login-view">
         <div class="hero-copy">
-          <span class="eyebrow"><span aria-hidden="true">✦</span> Assistente corporativo com IA local</span>
-          <h1>Política de viagem <em>não precisa</em> dar trabalho.</h1>
-          <p>Consulte regras corporativas com resposta fundamentada, fonte visível e isolamento completo entre empresas.</p>
+          <span class="eyebrow"><span aria-hidden="true">✦</span> Tire dúvidas antes, durante e depois da viagem</span>
+          <h1>Viajar a trabalho pode ser <em>mais simples.</em></h1>
+          <p>Encontre respostas claras sobre reservas, despesas e reembolsos. Cada resposta mostra de onde veio a informação.</p>
           <div class="trust-row" aria-label="Características da solução">
-            <span>✓ Busca híbrida</span><span>✓ Tenant isolado</span><span>✓ Llama 3.2 local</span>
+            <span>✓ Respostas com fontes</span><span>✓ Dados da empresa protegidos</span><span>✓ IA executada localmente</span>
           </div>
           <div class="hero-proof">
-            <span class="proof-number">2</span>
-            <span><strong>empresas sintéticas</strong><small>Regras conflitantes para provar o isolamento</small></span>
+            <span class="proof-number">50</span>
+            <span><strong>assuntos práticos disponíveis</strong><small>De passagens e hotel até emergências e reembolso</small></span>
           </div>
         </div>
 
         <div class="identity-panel" aria-labelledby="identity-title">
-          <div class="panel-kicker">ACESSO DEMONSTRATIVO</div>
+          <div class="panel-kicker">COMECE POR AQUI</div>
           <div class="panel-heading">
-            <div><h2 id="identity-title">Escolha uma empresa fictícia</h2><p>A identidade define quais políticas podem ser consultadas.</p></div>
+            <div><h2 id="identity-title">Em qual empresa você trabalha?</h2><p>Usaremos esse perfil para mostrar somente as orientações da empresa escolhida.</p></div>
             <span class="step-number">01</span>
           </div>
           <div class="identity-grid">
             <button class="identity-card aurora-card" type="button" data-identity="aurora">
               <span class="identity-icon aurora">AT</span>
-              <span class="identity-copy"><strong>Aurora Tecnologia</strong><small>Políticas corporativas mais flexíveis</small><code>aurora.demo</code></span>
+              <span class="identity-copy"><strong>Aurora Tecnologia</strong><small>Acessar como colaborador da Aurora</small><code>aurora.demo</code></span>
               <span class="arrow" aria-hidden="true">→</span>
             </button>
             <button class="identity-card brisa-card" type="button" data-identity="brisa">
               <span class="identity-icon brisa">BS</span>
-              <span class="identity-copy"><strong>Brisa Sistemas</strong><small>Regras e limites mais restritivos</small><code>brisa.demo</code></span>
+              <span class="identity-copy"><strong>Brisa Sistemas</strong><small>Acessar como colaborador da Brisa</small><code>brisa.demo</code></span>
               <span class="arrow" aria-hidden="true">→</span>
             </button>
           </div>
           <div class="inline-alert error hidden" id="login-error" role="alert"></div>
-          <div class="privacy-note"><span aria-hidden="true">◉</span><span><strong>Ambiente seguro.</strong> As credenciais são sintéticas e o token não é armazenado.</span></div>
+          <div class="privacy-note"><span aria-hidden="true">◉</span><span><strong>Demonstração segura.</strong> Os perfis e documentos desta página são fictícios.</span></div>
         </div>
       </section>
 
       <section class="workspace hidden" id="workspace">
         <aside class="sidebar">
-          <div class="tenant-card">
+          <div class="company-card">
             <span class="identity-icon" id="session-icon">AT</span>
-            <div><span class="muted-label">Empresa autenticada</span><strong id="session-company"></strong><code id="session-tenant"></code></div>
-            <span class="verified-badge" title="Tenant validado">✓</span>
+            <div><span class="muted-label">Você está consultando</span><strong id="session-company"></strong><code id="session-context" class="technical-id"></code></div>
+            <span class="verified-badge" title="Acesso confirmado">✓</span>
           </div>
           <nav class="demo-guide" aria-label="Roteiro da demonstração">
-            <span class="muted-label">Roteiro de 5 minutos</span>
-            <ol><li class="active"><span>1</span>Empresa autenticada</li><li><span>2</span>Faça uma pergunta</li><li><span>3</span>Confira as fontes</li><li><span>4</span>Abra o trace técnico</li><li><span>5</span>Envie seu feedback</li></ol>
+            <span class="muted-label">Como usar</span>
+            <ol><li class="active"><span>1</span>Confirme sua empresa</li><li><span>2</span>Escreva sua dúvida</li><li><span>3</span>Leia a orientação</li><li><span>4</span>Confira as fontes</li><li><span>5</span>Avalie a resposta</li></ol>
           </nav>
-          <div class="security-note"><span class="security-icon">✓</span><div><strong>Isolamento ativo</strong><p>O tenant vem do token assinado, nunca do navegador.</p></div></div>
+          <div class="security-note"><span class="security-icon">✓</span><div><strong>Informações protegidas</strong><p>Você só encontra documentos da empresa usada no acesso.</p></div></div>
         </aside>
 
         <div class="content-column">
           <section class="query-card" aria-labelledby="query-title">
             <div class="query-heading">
-              <div><span class="eyebrow">CONSULTA FUNDAMENTADA</span><h1 id="query-title">O que você quer saber?</h1><p>Faça uma pergunta sobre viagem, hotel, alimentação ou reembolso.</p></div>
-              <span class="model-badge"><span></span> llama3.2:1b · local</span>
+              <div><span class="eyebrow">PODE PERGUNTAR</span><h1 id="query-title">Como podemos ajudar?</h1><p>Escreva sua dúvida do seu jeito. Você também pode começar por uma sugestão abaixo.</p></div>
+              <span class="model-badge"><span></span> Assistente disponível</span>
             </div>
             <form id="ask-form">
               <label for="question">Sua pergunta</label>
               <div class="question-box">
-                <textarea id="question" name="question" minlength="3" maxlength="2000" rows="3" placeholder="Ex.: Qual é o limite diário de alimentação em viagem nacional?" required></textarea>
-                <button class="primary-button" id="ask-button" type="submit"><span>Perguntar</span><span aria-hidden="true">→</span></button>
+                <textarea id="question" name="question" minlength="3" maxlength="2000" rows="3" placeholder="Ex.: Posso despachar uma mala nesta viagem?" required></textarea>
+                <button class="primary-button" id="ask-button" type="submit"><span>Buscar resposta</span><span aria-hidden="true">→</span></button>
               </div>
               <div class="question-footer"><div class="examples" id="examples" aria-label="Perguntas de exemplo"></div><span id="character-count">0 / 2.000</span></div>
             </form>
           </section>
 
           <div class="state-card hidden" id="state-card" role="status" aria-live="polite"><span class="state-icon" id="state-icon"></span><div><strong id="state-title"></strong><p id="state-message"></p></div></div>
-          <section class="loading-card hidden" id="loading-card" aria-live="polite"><div class="spinner"></div><div><strong>Consultando políticas autorizadas</strong><p id="loading-step">Gerando o vetor da pergunta...</p></div></section>
+          <section class="loading-card hidden" id="loading-card" aria-live="polite"><div class="spinner"></div><div><strong>Procurando a melhor orientação</strong><p id="loading-step">Entendendo sua dúvida...</p></div></section>
 
           <section class="response-card hidden" id="response-card" aria-labelledby="answer-title">
-            <div class="answer-header"><div class="answer-label"><span class="spark" aria-hidden="true">✦</span><span>Resposta fundamentada</span></div><span class="confidence" id="confidence-badge"></span></div>
+            <div class="answer-header"><div class="answer-label"><span class="spark" aria-hidden="true">✦</span><span>Orientação encontrada</span></div><span class="confidence" id="confidence-badge"></span></div>
             <h2 id="answer-title" class="sr-only">Resposta</h2><p class="answer-text" id="answer-text"></p>
-            <div class="sources-section" id="sources-section"><div class="section-title"><h3>Fontes utilizadas</h3><span id="source-count"></span></div><div id="sources-list" class="sources-list"></div></div>
+            <div class="sources-section" id="sources-section"><div class="section-title"><h3>De onde veio esta resposta</h3><span id="source-count"></span></div><div id="sources-list" class="sources-list"></div></div>
             <details class="trace-panel" id="trace-panel">
-              <summary><span>Rastreabilidade técnica</span><span class="trace-summary" id="trace-summary"></span></summary>
+              <summary><span>Ver detalhes técnicos</span><span class="trace-summary" id="trace-summary"></span></summary>
               <div class="trace-content"><div class="trace-grid" id="trace-grid"></div><div class="request-row"><span>Identificador da requisição</span><code id="request-id"></code><button id="copy-request" type="button">Copiar</button></div></div>
             </details>
-            <div class="feedback-row" id="feedback-row"><div><strong>Esta resposta foi útil?</strong><span>Seu feedback fica ligado ao request_id.</span></div><div class="feedback-actions"><button type="button" data-rating="positive" aria-label="Resposta útil">Sim</button><button type="button" data-rating="negative" aria-label="Resposta não foi útil">Não</button></div></div>
+            <div class="feedback-row" id="feedback-row"><div><strong>Esta resposta ajudou?</strong><span>Sua avaliação ajuda a melhorar as próximas respostas.</span></div><div class="feedback-actions"><button type="button" data-rating="positive" aria-label="A resposta ajudou">Sim</button><button type="button" data-rating="negative" aria-label="A resposta não ajudou">Não</button></div></div>
             <div class="feedback-confirmation hidden" id="feedback-confirmation" role="status"></div>
           </section>
         </div>
       </section>
     </main>
-    <footer><span><strong>onfly</strong> · Dados inteiramente sintéticos · Release 1.0.0</span><nav><a id="metrics-link" href="./metrics" target="_blank" rel="noreferrer">Métricas</a><a href="https://github.com/yhenriux" target="_blank" rel="noreferrer">GitHub</a></nav></footer>
+    <footer><span><strong>onfly</strong> · Ambiente demonstrativo com informações fictícias</span><nav><a id="metrics-link" href="./metrics" target="_blank" rel="noreferrer">Métricas técnicas</a><a href="https://github.com/yhenriux/onfly-policy-copilot" target="_blank" rel="noreferrer">Código do projeto</a></nav></footer>
   </body>
 </html>

@@ -73,3 +73,31 @@ def test_loader_rejects_empty_document(tmp_path: Path) -> None:
             valid_from=date(2026, 1, 1),
             valid_until=date(2026, 12, 31),
         )
+
+
+def test_chunking_preserves_heading_hierarchy_and_complete_sentences(tmp_path: Path) -> None:
+    policy = tmp_path / "structured.md"
+    policy.write_text(
+        "# Guia\n\n## Transporte\n\n### Aplicativo\n"
+        "Primeira orientação completa. Segunda orientação completa. "
+        "Terceira orientação completa.",
+        encoding="utf-8",
+    )
+    loaded = load_markdown(
+        policy,
+        tenant_id="aurora_tecnologia",
+        document_id="structured_v1",
+        title="Guia estruturado",
+        version="v1",
+        valid_from=date(2026, 1, 1),
+        valid_until=None,
+    )
+
+    chunks = chunk_by_section(
+        normalize_document(loaded),
+        ChunkingConfig(max_chars=65, overlap_chars=30),
+    )
+
+    assert all(chunk.section == "Transporte > Aplicativo" for chunk in chunks)
+    assert all(chunk.text.endswith(".") for chunk in chunks)
+    assert all(len(chunk.text) <= 65 for chunk in chunks)

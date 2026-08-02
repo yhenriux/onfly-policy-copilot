@@ -1,5 +1,6 @@
-"""Divisão de documentos em trechos que preservam as seções originais."""
+"""Divisão de documentos em trechos que preservam o sentido do texto."""
 
+import re
 from dataclasses import dataclass
 from hashlib import sha256
 
@@ -22,27 +23,67 @@ class ChunkingConfig:
             raise ValueError("overlap_chars deve ser menor que max_chars")
 
 
+def _natural_units(text: str) -> list[str]:
+    """Separa parágrafos e, quando necessário, frases completas."""
+
+    units: list[str] = []
+    for paragraph in re.split(r"\n\s*\n", text):
+        paragraph = paragraph.strip()
+        if not paragraph:
+            continue
+        units.extend(
+            sentence.strip()
+            for sentence in re.split(r"(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ0-9])", paragraph)
+            if sentence.strip()
+        )
+    return units
+
+
+def _hard_split(text: str, max_chars: int) -> list[str]:
+    """Corta apenas uma frase excepcionalmente longa, preferindo espaços."""
+
+    parts: list[str] = []
+    remaining = text.strip()
+    while len(remaining) > max_chars:
+        boundary = remaining.rfind(" ", max_chars // 2, max_chars + 1)
+        boundary = boundary if boundary > 0 else max_chars
+        parts.append(remaining[:boundary].strip())
+        remaining = remaining[boundary:].strip()
+    if remaining:
+        parts.append(remaining)
+    return parts
+
+
 def _split_with_overlap(text: str, config: ChunkingConfig) -> list[str]:
-    """Divide texto longo e repete o final anterior para manter contexto."""
+    """Agrupa frases completas e reaproveita contexto do trecho anterior."""
 
     if len(text) <= config.max_chars:
         return [text]
 
-    parts: list[str] = []
-    start = 0
-    while start < len(text):
-        end = min(start + config.max_chars, len(text))
-        if end < len(text):
-            boundary = text.rfind(" ", start + config.max_chars // 2, end)
-            if boundary > start:
-                end = boundary
-        part = text[start:end].strip()
-        if part:
-            parts.append(part)
-        if end >= len(text):
-            break
-        start = max(end - config.overlap_chars, start + 1)
-    return parts
+    units = [
+        piece for unit in _natural_units(text) for piece in _hard_split(unit, config.max_chars)
+    ]
+    chunks: list[str] = []
+    current: list[str] = []
+    for unit in units:
+        candidate = " ".join([*current, unit])
+        if current and len(candidate) > config.max_chars:
+            chunks.append(" ".join(current))
+            overlap: list[str] = []
+            overlap_size = 0
+            for previous in reversed(current):
+                added = len(previous) + (1 if overlap else 0)
+                if overlap_size + added > config.overlap_chars:
+                    break
+                overlap.insert(0, previous)
+                overlap_size += added
+            current = overlap
+        current.append(unit)
+    if current:
+        final_chunk = " ".join(current)
+        if not chunks or final_chunk != chunks[-1]:
+            chunks.append(final_chunk)
+    return chunks
 
 
 def chunk_by_section(
@@ -53,14 +94,19 @@ def chunk_by_section(
 
     runtime_config = config or ChunkingConfig()
     sections: list[tuple[str, list[str]]] = []
-    current_title = "Introdução"
+    heading_path: list[str] = []
+    current_title = "Visão geral"
     current_lines: list[str] = []
 
     for line in document.text.splitlines():
-        if line.startswith("## "):
+        heading = re.match(r"^(#{2,4})\s+(.+)$", line)
+        if heading:
             if any(item.strip() for item in current_lines):
                 sections.append((current_title, current_lines))
-            current_title = line.removeprefix("## ").strip()
+            level = len(heading.group(1)) - 2
+            heading_path = heading_path[:level]
+            heading_path.append(heading.group(2).strip())
+            current_title = " > ".join(heading_path)
             current_lines = []
         elif not line.startswith("# "):
             current_lines.append(line)

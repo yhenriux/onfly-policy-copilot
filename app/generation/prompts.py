@@ -2,7 +2,7 @@
 
 from app.domain.models import RetrievedChunk
 
-PROMPT_VERSION = "policy_answer_v1"
+PROMPT_VERSION = "policy_answer_v2"
 
 SYSTEM_PROMPT = """Você extrai regras de políticas corporativas.
 Use somente as evidências fornecidas. Não complete lacunas e não use conhecimento externo.
