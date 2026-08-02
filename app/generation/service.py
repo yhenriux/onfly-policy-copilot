@@ -255,11 +255,22 @@ class AskService:
                 document_id=chunk.document_id,
                 version=chunk.version,
                 chunk_id=chunk.chunk_id,
+                section=chunk.section,
                 score=round(chunk.score, 4),
             )
             for chunk in chunks
         ]
-        response.trace = ExecutionTrace(timings_ms=dict(trace.timings_ms), documents=documents)
+        response.trace = ExecutionTrace(
+            timings_ms=dict(trace.timings_ms),
+            documents=documents,
+            estimated_local_cost_usd=0.0,
+            estimated_output_tokens=len(response.answer.split()),
+            improvement_suggestions=_improvement_suggestions(
+                response=response,
+                top1_score=top1_score,
+                evidence_min_score=self._evidence_min_score,
+            ),
+        )
         log_structured(
             logger,
             "rag_trace",
@@ -304,6 +315,38 @@ def _source(chunk: RetrievedChunk) -> SourceReference:
         section=chunk.section,
         score=round(chunk.score, 4),
     )
+
+
+def _improvement_suggestions(
+    *,
+    response: AskResponse,
+    top1_score: float,
+    evidence_min_score: float,
+) -> list[str]:
+    """Indica ações técnicas objetivas a partir do resultado desta execução."""
+
+    suggestions: list[str] = []
+    if response.generation.status == "no_evidence":
+        suggestions.append(
+            "Expandir a base de conhecimento para este assunto ou revisar os sinônimos."
+        )
+    if top1_score and top1_score < evidence_min_score:
+        suggestions.append(
+            "Revisar chunking, metadados e termos da consulta: o Top-1 ficou abaixo do limiar."
+        )
+    if response.generation.status == "degraded":
+        suggestions.append(
+            "Investigar disponibilidade e saída estruturada do modelo antes de promover mudanças."
+        )
+    if response.latency_ms > 2_000:
+        suggestions.append(
+            "Avaliar latência de embedding, retrieval e geração antes de alterar o modelo."
+        )
+    if not suggestions:
+        suggestions.append(
+            "Monitorar feedback e métricas do golden dataset antes da próxima alteração."
+        )
+    return suggestions
 
 
 def _elapsed_ms(started_at: float) -> int:

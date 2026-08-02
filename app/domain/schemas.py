@@ -91,6 +91,7 @@ class ExecutionDocument(BaseModel):
     document_id: str
     version: str
     chunk_id: str
+    section: str = ""
     score: float = Field(ge=0)
 
 
@@ -99,6 +100,9 @@ class ExecutionTrace(BaseModel):
 
     timings_ms: dict[str, float]
     documents: list[ExecutionDocument]
+    estimated_local_cost_usd: float = Field(default=0, ge=0)
+    estimated_output_tokens: int = Field(default=0, ge=0)
+    improvement_suggestions: list[str] = Field(default_factory=list, max_length=5)
 
 
 class AskResponse(BaseModel):

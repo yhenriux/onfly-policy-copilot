@@ -59,6 +59,10 @@ const elements = {
   traceSummary: document.querySelector("#trace-summary"),
   traceContext: document.querySelector("#trace-context"),
   traceGrid: document.querySelector("#trace-grid"),
+  executionMetrics: document.querySelector("#execution-metrics"),
+  topKPanel: document.querySelector("#top-k-panel"),
+  topKList: document.querySelector("#top-k-list"),
+  improvementList: document.querySelector("#improvement-list"),
   requestId: document.querySelector("#request-id"),
   copyRequest: document.querySelector("#copy-request"),
   feedbackRow: document.querySelector("#feedback-row"),
@@ -85,21 +89,21 @@ async function checkOperations() {
   const dot = elements.systemStatus.querySelector(".status-dot");
   const label = elements.systemStatus.querySelector("span:last-child");
   dot.className = "status-dot checking";
-  label.textContent = "Verificando serviços";
+  label.textContent = "Verificando API e dependências";
   try {
     const response = await api("/ready", {}, 4000);
     const data = await response.json();
     if (response.ok) {
       dot.className = "status-dot";
-      label.textContent = "Tudo pronto para começar";
+      label.textContent = "API disponível";
     } else {
       const unavailable = Object.entries(data.dependencies || {}).filter(([, ready]) => !ready).map(([name]) => name).join(" e ");
       dot.className = "status-dot down";
-      label.textContent = "Alguns recursos estão indisponíveis";
+      label.textContent = `Dependências indisponíveis: ${unavailable || "verifique a API"}`;
     }
   } catch {
     dot.className = "status-dot down";
-    label.textContent = "Assistente indisponível";
+    label.textContent = "API indisponível";
   }
 }
 
@@ -283,11 +287,11 @@ function renderTrace(data) {
   const timings = data.trace?.timings_ms || { total: data.latency_ms };
   const preferred = ["ollama_embedding", "retrieval", "reranking", "ollama_generation", "total"];
   const labels = {
-    ollama_embedding: "Entendimento da pergunta",
-    retrieval: "Busca nas políticas",
-    reranking: "Conferência das fontes",
-    ollama_generation: "Preparação da resposta",
-    total: "Tempo total",
+    ollama_embedding: "Embedding",
+    retrieval: "Retrieval híbrido",
+    reranking: "Re-ranking",
+    ollama_generation: "LLM",
+    total: "End-to-end",
   };
   preferred.filter((name) => timings[name] !== undefined).forEach((name) => {
     const item = document.createElement("div");
@@ -299,12 +303,66 @@ function renderTrace(data) {
     item.append(label, value);
     elements.traceGrid.append(item);
   });
+  renderExecutionMetrics(data.trace || {});
+  renderTopK(data.trace?.documents || []);
+  renderImprovementSuggestions(data.trace?.improvement_suggestions || []);
   const sourceCount = (data.sources || []).length;
   elements.traceContext.textContent = sourceCount
     ? `Consultamos ${sourceCount} ${sourceCount === 1 ? "fonte autorizada" : "fontes autorizadas"} da sua empresa e conferimos a relevância antes de responder.`
     : "Não encontramos uma fonte autorizada suficiente para responder com segurança.";
   elements.traceSummary.textContent = `${Number(timings.total || data.latency_ms).toFixed(0)} ms`;
   elements.requestId.textContent = data.request_id;
+}
+
+function renderExecutionMetrics(trace) {
+  const top1 = trace.documents?.[0]?.score || 0;
+  const metrics = [
+    ["Custo estimado", `US$ ${Number(trace.estimated_local_cost_usd || 0).toFixed(4)}`, "Ollama local"],
+    ["Tokens de saída", String(trace.estimated_output_tokens || 0), "estimativa por palavras"],
+    ["Top-1 score", top1.toFixed(4), "primeiro chunk após o re-ranking"],
+  ];
+  elements.executionMetrics.replaceChildren();
+  metrics.forEach(([label, value, description]) => {
+    const item = document.createElement("div");
+    item.className = "execution-metric";
+    const metricLabel = document.createElement("span");
+    metricLabel.textContent = label;
+    const metricValue = document.createElement("strong");
+    metricValue.textContent = value;
+    const metricDescription = document.createElement("small");
+    metricDescription.textContent = description;
+    item.append(metricLabel, metricValue, metricDescription);
+    elements.executionMetrics.append(item);
+  });
+}
+
+function renderTopK(documents) {
+  elements.topKList.replaceChildren();
+  setHidden(elements.topKPanel, documents.length === 0);
+  documents.forEach((document, index) => {
+    const item = document.createElement("div");
+    item.className = "top-k-item";
+    const identifier = document.createElement("code");
+    identifier.textContent = `#${index + 1} · ${document.document_id} · ${document.chunk_id}`;
+    const metadata = document.createElement("span");
+    metadata.textContent = `${document.section || "Seção não informada"} · ${document.version}`;
+    const score = document.createElement("strong");
+    score.textContent = document.score.toFixed(4);
+    item.append(identifier, metadata, score);
+    elements.topKList.append(item);
+  });
+}
+
+function renderImprovementSuggestions(suggestions) {
+  elements.improvementList.replaceChildren();
+  const items = suggestions.length
+    ? suggestions
+    : ["Monitorar feedback e métricas do golden dataset antes da próxima alteração."];
+  items.forEach((suggestion) => {
+    const item = document.createElement("li");
+    item.textContent = suggestion;
+    elements.improvementList.append(item);
+  });
 }
 
 async function sendFeedback(rating) {
