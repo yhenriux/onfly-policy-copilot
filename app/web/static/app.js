@@ -211,6 +211,8 @@ async function askQuestion(event) {
     }
     renderResponse(data);
   } catch (error) {
+    // Registra a causa no console para investigar falhas sem expor detalhes técnicos ao viajante.
+    console.error("Falha ao buscar ou exibir a resposta", error);
     if (error.name === "AbortError") {
       showState("warning", "A resposta está demorando mais que o normal", "Aguarde alguns segundos e tente novamente. O assistente pode estar iniciando.");
     } else {
@@ -336,18 +338,18 @@ function renderExecutionMetrics(trace) {
   });
 }
 
-function renderTopK(documents) {
+function renderTopK(chunks) {
   elements.topKList.replaceChildren();
-  setHidden(elements.topKPanel, documents.length === 0);
-  documents.forEach((document, index) => {
+  setHidden(elements.topKPanel, chunks.length === 0);
+  chunks.forEach((chunk, index) => {
     const item = document.createElement("div");
     item.className = "top-k-item";
     const identifier = document.createElement("code");
-    identifier.textContent = `#${index + 1} · ${document.document_id} · ${document.chunk_id}`;
+    identifier.textContent = `#${index + 1} · ${chunk.document_id} · ${chunk.chunk_id}`;
     const metadata = document.createElement("span");
-    metadata.textContent = `${document.section || "Seção não informada"} · ${document.version}`;
+    metadata.textContent = `${chunk.section || "Seção não informada"} · ${chunk.version}`;
     const score = document.createElement("strong");
-    score.textContent = document.score.toFixed(4);
+    score.textContent = chunk.score.toFixed(4);
     item.append(identifier, metadata, score);
     elements.topKList.append(item);
   });

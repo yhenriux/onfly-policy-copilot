@@ -5,7 +5,7 @@
 - Referência visual: `C:\Users\yhenr\.codex\generated_images\019fbeed-7706-70b3-84ac-72d9839b4180\exec-ffb8d0d8-e307-4e47-97bc-2f2865cafa5d.png`
 - Implementação: `http://localhost:8000/`, capturada no navegador integrado em 2026-08-02.
 - Viewport de comparação: desktop, 1248 × 788 CSS px. A referência é 1440 × 1024 px; a composição foi comparada por regiões, sem normalização de densidade.
-- Estado: Aurora autenticada, pergunta preenchida. O navegador integrado não expõe `window.fetch` ao contexto de teste e, por isso, não conseguiu renderizar a resposta gerada nesse ambiente. A API foi validada separadamente com login e `POST /v1/ask` locais.
+- Estado: Aurora autenticada, pergunta “Posso usar aplicativo de transporte?” respondida, com fontes, 10 chunks no Top-k e trace visível. A API também foi validada separadamente com login e `POST /v1/ask` locais.
 
 ## Comparação
 
@@ -25,11 +25,9 @@ Foram mantidos os tokens existentes da Onfly: azul para ação e progresso, verd
 
 O fluxo não exige imagens ou ilustrações. Nenhum ativo visual do alvo foi substituído por desenho em CSS; os símbolos já existentes foram preservados como parte da interface funcional.
 
-## Findings
+## Correção validada
 
-- [P3] O navegador integrado não executou a chamada `fetch` da página durante a automação, embora o login, `GET /ready` e `POST /v1/ask` tenham sido validados localmente. Isso impede comparar a resposta preenchida nesse ambiente específico.
-  - Impacto: não afeta o contrato da API, mas deixa uma lacuna na captura visual automatizada do estado com resposta.
-  - Próximo passo: abrir `http://localhost:8000/` no navegador local comum e executar uma das perguntas rápidas para uma captura adicional.
+O estado com resposta inicialmente não aparecia porque o identificador local `document` escondia o objeto `document` do navegador no renderizador do Top-k. O identificador foi renomeado para `chunk`. A consulta agora conclui e apresenta a resposta, as fontes, os 10 chunks retornados e as métricas técnicas.
 
 ## Interações validadas
 
@@ -37,7 +35,7 @@ O fluxo não exige imagens ou ilustrações. Nenhum ativo visual do alvo foi sub
 - Renderização do espaço de consulta, estado da API e perguntas rápidas.
 - Validação de sintaxe do JavaScript.
 - Teste de integração de front-end e feedback: 4 aprovados.
-- API local: `GET /ready`, login e consulta `reembolso` retornaram resposta, fontes, trace e Top-k.
+- API local: `GET /ready`, login e consulta retornaram resposta, fontes, trace e Top-k.
 
 ## Resultado final
 
