@@ -55,7 +55,7 @@ O pipeline reúne divisão de documentos por seção, embeddings locais com `all
 
 O modelo local `llama3.2:1b` é usado quando a pergunta não pertence ao conjunto de perguntas frequentes tratadas diretamente pelas evidências recuperadas. Se não houver suporte suficiente na base, a aplicação informa essa limitação em vez de criar uma regra.
 
-Consulte [Pipeline RAG](rag-pipeline.md) para a descrição técnica completa e [Arquitetura](architecture.md) para a organização dos componentes.
+Consulte [Pipeline RAG](rag-pipeline-explicacao-local-v1.md) para a descrição técnica completa e [Arquitetura](rag-arquitetura-explicacao-local-v1.md) para a organização dos componentes.
 
 ## Critérios de sucesso
 

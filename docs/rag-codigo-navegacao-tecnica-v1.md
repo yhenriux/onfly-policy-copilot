@@ -282,4 +282,4 @@ Execute a suíte completa com:
 uv run pytest
 ```
 
-O conjunto de avaliações reproduzíveis está documentado em [Plano e métricas de avaliação](evaluation-plan.md).
+O conjunto de avaliações reproduzíveis está documentado em [Plano e métricas de avaliação](rag-avaliacao-metricas-qualidade-v1.md).

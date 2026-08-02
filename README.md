@@ -72,7 +72,7 @@ Resposta fundamentada, fontes e confiança
 8. Para as perguntas frequentes de bagagem, hotel, reembolso e transporte por aplicativo, a aplicação monta uma resposta clara a partir das fontes recuperadas. Nas demais perguntas, o `llama3.2:1b` gera uma resposta estruturada usando somente o contexto autorizado.
 9. A API devolve a resposta, as fontes usadas, a confiança e um `request_id`, que é o identificador da requisição. Quando não há evidência suficiente, ela informa isso em vez de inventar uma política.
 
-Leia a descrição completa em [Pipeline RAG](docs/rag-pipeline.md).
+Leia a descrição completa em [Pipeline RAG](docs/rag-pipeline-explicacao-local-v1.md).
 
 ## Tecnologias
 
@@ -111,7 +111,7 @@ uv run uvicorn app.main:app --reload
 
 Acesse [http://localhost:8000](http://localhost:8000). Não abra `app/web/index.html` diretamente: a interface depende da API.
 
-A carga inicial cria 30 trechos: Aurora `v1`, Aurora `v2` e Brisa `v1`. Somente Aurora `v2` e Brisa `v1` ficam ativas. Repetir o seed não duplica dados.
+A carga inicial indexa as políticas versionadas e os catálogos de dúvidas das duas empresas sintéticas. Somente a versão ativa de cada política participa da busca. Repetir o seed não duplica dados.
 
 ## Credenciais da demonstração
 
@@ -206,16 +206,17 @@ tests/               testes unitários, integrados e de segurança
 
 ## Documentação técnica
 
-- [Arquitetura](docs/architecture.md)
-- [Pipeline RAG](docs/rag-pipeline.md)
-- [Prova de conceito](docs/proof-of-concept.md)
-- [Guia do código RAG](docs/rag-code-guide.md)
-- [Ameaças e controles](docs/threat-model.md)
-- [Plano e métricas de avaliação](docs/evaluation-plan.md)
-- [Operação e investigação de incidentes](docs/runbook.md)
-- [Deploy e rollback](docs/deployment-and-rollback.md)
-- [Migração segura do índice](docs/index-migration.md)
-- [Roteiro de demonstração](docs/demo-script.md)
+- [Catálogo e organização do repositório](docs/repositorio-catalogo-classificacao-github-v1.md)
+- [Arquitetura](docs/rag-arquitetura-explicacao-local-v1.md)
+- [Pipeline RAG](docs/rag-pipeline-explicacao-local-v1.md)
+- [Prova de conceito](docs/rag-prova-validacao-tecnica-v1.md)
+- [Guia do código RAG](docs/rag-codigo-navegacao-tecnica-v1.md)
+- [Ameaças e controles](docs/rag-seguranca-modelagem-tecnica-v1.md)
+- [Plano e métricas de avaliação](docs/rag-avaliacao-metricas-qualidade-v1.md)
+- [Operação e investigação de incidentes](docs/rag-operacao-procedimento-local-v1.md)
+- [Deploy e rollback](docs/rag-deploy-procedimento-operacao-v1.md)
+- [Migração segura do índice](docs/rag-indice-migracao-operacao-v1.md)
+- [Roteiro de demonstração](docs/rag-demonstracao-roteiro-avaliacao-v1.md)
 
 ## Limitações conhecidas
 
