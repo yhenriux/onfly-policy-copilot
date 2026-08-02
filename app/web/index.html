@@ -101,12 +101,17 @@
           <section class="loading-card hidden" id="loading-card" aria-live="polite"><div class="spinner"></div><div><strong>Procurando a melhor orientação</strong><p id="loading-step">Entendendo sua dúvida...</p></div></section>
 
           <section class="response-card hidden" id="response-card" aria-labelledby="answer-title">
-            <div class="answer-header"><div class="answer-label"><span class="spark" aria-hidden="true">✦</span><span>Orientação encontrada</span></div><span class="confidence" id="confidence-badge"></span></div>
-            <h2 id="answer-title" class="sr-only">Resposta</h2><p class="answer-text" id="answer-text"></p>
-            <div class="sources-section" id="sources-section"><div class="section-title"><h3>De onde veio esta resposta</h3><span id="source-count"></span></div><div id="sources-list" class="sources-list"></div></div>
+            <div class="answer-header"><div class="answer-label"><span class="spark" aria-hidden="true">✦</span><span>Resposta fundamentada</span></div><span class="confidence" id="confidence-badge"></span></div>
+            <div class="response-workbench">
+              <div class="answer-column">
+                <h2 id="answer-title" class="sr-only">Resposta</h2><p class="answer-text" id="answer-text"></p>
+                <div class="sources-section" id="sources-section"><div class="section-title"><h3>Fontes citadas</h3><span id="source-count"></span></div><div id="sources-list" class="sources-list"></div></div>
+              </div>
+              <aside class="evidence-panel" id="top-k-panel" aria-labelledby="evidence-title"><div class="section-title"><div><h3 id="evidence-title">Top-k evidências</h3><span>Chunks após retrieval e re-ranking</span></div><span class="technical-tag">auditável</span></div><div class="top-k-list" id="top-k-list"></div></aside>
+            </div>
             <section class="trace-panel" aria-labelledby="trace-title">
-              <div class="trace-heading"><div><h3 id="trace-title">Como preparamos esta resposta</h3><p id="trace-context"></p></div><span class="trace-summary" id="trace-summary"></span></div>
-              <div class="trace-content"><div class="trace-grid" id="trace-grid"></div><div class="execution-metrics" id="execution-metrics"></div><section class="top-k-panel" id="top-k-panel"><div class="section-title"><h4>Top-k recuperado</h4><span>Chunks retornados pelo retrieval</span></div><div class="top-k-list" id="top-k-list"></div></section><section class="improvement-panel" id="improvement-panel"><h4>Próximas ações sugeridas</h4><ul id="improvement-list"></ul></section><div class="request-row"><div><strong>Protocolo desta consulta</strong><span>Use este código caso precise informar um problema à equipe responsável.</span></div><code id="request-id"></code><button id="copy-request" type="button">Copiar</button></div></div>
+              <div class="trace-heading"><div><h3 id="trace-title">Trace da execução</h3><p id="trace-context"></p></div><span class="trace-summary" id="trace-summary"></span></div>
+              <div class="trace-content"><div class="trace-grid" id="trace-grid"></div><div class="execution-metrics" id="execution-metrics"></div><section class="improvement-panel" id="improvement-panel"><h4>Melhorias sugeridas</h4><ul id="improvement-list"></ul></section><div class="request-row"><div><strong>Protocolo da consulta</strong><span>Identificador para correlacionar logs, métricas e feedback.</span></div><code id="request-id"></code><button id="copy-request" type="button">Copiar</button></div></div>
             </section>
             <div class="feedback-row" id="feedback-row"><div><strong>Esta resposta ajudou?</strong><span>Sua avaliação ajuda a melhorar as próximas respostas.</span></div><div class="feedback-actions"><button type="button" data-rating="positive" aria-label="A resposta ajudou">Sim</button><button type="button" data-rating="negative" aria-label="A resposta não ajudou">Não</button></div></div>
             <div class="feedback-confirmation hidden" id="feedback-confirmation" role="status"></div>
