@@ -187,7 +187,85 @@ Esse guardrail exige a empresa antes da busca e confere cada trecho retornado de
 | Fonte não autorizada é citada | Validação das posições citadas | [`service.py`](../app/generation/service.py#L129) |
 | Empresa A acessa documentos da empresa B | Token assinado, filtros no Qdrant e validação dupla | [`auth.py`](../app/core/auth.py), [`dense.py`](../app/retrieval/dense.py) e [`tenant_guardrail.py`](../app/guardrails/tenant_guardrail.py) |
 
-## 9. Como verificar o comportamento
+## 9. Integração de APIs de IA, riscos e opções de execução
+
+O projeto possui uma integração de IA efetivamente implementada: o **Ollama**, executado localmente. Ele atende a duas necessidades diferentes do RAG: criar embeddings e gerar respostas. O Qdrant também é acessado por API, mas é um banco vetorial, não um modelo de IA.
+
+### APIs utilizadas hoje
+
+| Serviço | Chamadas usadas | Finalidade no projeto | Onde está no código |
+|---|---|---|---|
+| Ollama | `POST /api/embed` | Cria embeddings com `all-minilm` para documentos e perguntas. | [`OllamaProvider.embed`](../app/generation/ollama_provider.py#L103) |
+| Ollama | `POST /api/chat` | Gera resposta estruturada com `llama3.2:1b` quando não há síntese direta de pergunta frequente. | [`OllamaProvider.generate`](../app/generation/ollama_provider.py#L118) |
+| Qdrant | cliente Python do Qdrant | Grava vetores e pesquisa documentos por semelhança. | [`QdrantVectorStore`](../app/retrieval/dense.py#L19) |
+| FastAPI | `/v1/auth/login`, `/v1/ask` e demais rotas | Expõe a API do próprio projeto para a interface e para testes. | [`app/main.py`](../app/main.py) |
+
+[`OllamaProvider`](../app/generation/ollama_provider.py#L32) é o adaptador da integração. Ele centraliza endereço, timeout, tentativas e conversão das respostas HTTP para os modelos internos. Portanto, o restante da aplicação não depende diretamente de endpoints do Ollama.
+
+### Como a integração funciona
+
+1. [`Settings`](../app/core/config.py#L11) lê `OLLAMA_BASE_URL`, modelos, timeout e tentativas do arquivo `.env`.
+2. [`_build_ask_service`](../app/main.py#L49) cria uma instância de `OllamaProvider` e a entrega ao serviço de perguntas.
+3. Na ingestão, [`embed_chunks`](../app/ingestion/embeddings.py#L15) envia título, seção e texto para `/api/embed`.
+4. Na consulta, [`AskService.ask`](../app/generation/service.py#L75) gera o embedding da pergunta, faz o retrieval e só então chama a geração quando necessário.
+5. [`OllamaProvider.generate`](../app/generation/ollama_provider.py#L118) pede JSON compatível com `GenerationOutput`; a validação rejeita uma resposta fora do formato esperado.
+
+O contrato [`GenerationProvider`](../app/generation/provider.py#L22) define o mínimo que qualquer provedor precisa oferecer: `embed`, `generate`, nome do provedor, modelo e versão de prompt. Isso mantém Ollama substituível sem alterar chunking, retrieval, guardrails ou a API pública.
+
+### Reprodução local e self-hosted
+
+O modo atual já é **self-hosted local**: os modelos rodam no computador, sem enviar perguntas e documentos para uma API comercial.
+
+```powershell
+ollama pull llama3.2:1b
+ollama pull all-minilm
+uv sync --dev
+Copy-Item .env.example .env
+uv run python -m scripts.seed_demo
+uv run uvicorn app.main:app --reload
+```
+
+O endereço padrão é `http://localhost:11434`, configurado em [`.env.example`](../.env.example). Para rodar em um servidor próprio, o mesmo desenho pode ser usado com:
+
+- Ollama em uma máquina ou container privado;
+- API FastAPI em container;
+- Qdrant em disco local ou em um serviço Qdrant privado;
+- rede interna entre API, Ollama e Qdrant, sem expor o endpoint do modelo à internet pública.
+
+Para Qdrant remoto, o projeto já oferece `QDRANT_MODE=server`, `QDRANT_URL` e `QDRANT_API_KEY`. A chave deve ficar apenas no `.env` ou no cofre de segredos do ambiente, nunca no repositório.
+
+### Caminho para uma execução hospedada em nuvem
+
+O repositório **não integra atualmente** OpenAI, Anthropic, Gemini, Bedrock, Vertex AI ou Azure OpenAI. A arquitetura, porém, foi preparada para essa troca por meio de `GenerationProvider`.
+
+Para adicionar um provedor em nuvem, o passo responsável seria:
+
+1. criar, por exemplo, `app/generation/cloud_provider.py` implementando `GenerationProvider`;
+2. implementar `embed` e `generate` com a API oficial escolhida;
+3. guardar chave e endpoint em variáveis de ambiente ou em um cofre de segredos;
+4. selecionar o provedor na composição em [`_build_ask_service`](../app/main.py#L49), sem alterar `AskService`;
+5. manter o mesmo contrato de saída, timeout, retry, fontes autorizadas e testes;
+6. implantar a API em ambiente privado, com Qdrant gerenciado ou privado e observabilidade centralizada.
+
+Essa separação evita reescrever o pipeline quando houver uma decisão de fornecedor. Ela também permite comparar modelos locais e hospedados sob as mesmas métricas de qualidade, latência e custo.
+
+### Riscos da integração e controles atuais
+
+| Risco | Impacto possível | Controle presente | Próximo controle para nuvem |
+|---|---|---|---|
+| Indisponibilidade ou lentidão do modelo | Falha ou demora na resposta | Timeout, retry com espera progressiva e fallback em [`ollama_provider.py`](../app/generation/ollama_provider.py#L62) | Health check externo, autoscaling e alertas. |
+| Resposta fora do formato | Interface ou API recebem dados inválidos | Schema Pydantic e saída estruturada em [`generate`](../app/generation/ollama_provider.py#L118) | Testes de contrato por provedor e versionamento de modelo. |
+| Resposta inventada | Regra incorreta para a pessoa usuária | Evidências autorizadas, fontes verificadas e fallback em [`service.py`](../app/generation/service.py) | Avaliação contínua, revisão humana para casos críticos e limites de confiança. |
+| Exposição de documentos e perguntas | Risco de privacidade e conformidade | Execução local; logs mascarados; dados sintéticos na demonstração | Rede privada, criptografia, retenção mínima e acordo de processamento de dados. |
+| Vazamento de segredos | Uso indevido da conta ou API | `.env` separado e segredos tipados em [`config.py`](../app/core/config.py#L11) | Cofre de segredos, rotação de chaves e identidade de serviço. |
+| Custo e limites de uso | Custo imprevisível ou respostas bloqueadas | Modelos locais e métricas de latência | Orçamentos, rate limit, medição de tokens e alertas de custo. |
+| Prompt injection | Modelo segue instruções indevidas | Guardrails documentados na [seção de segurança](#8-guardrails-filtro-de-conteúdo-e-alinhamento-da-resposta) | Filtros adicionais, monitoramento e revisão de ataques reais. |
+
+### Decisão demonstrada
+
+Ollama foi escolhido para a prova de conceito porque permite reproduzir o fluxo sem chave de API, custo por chamada ou envio externo de dados. Esse desenho é adequado para validar arquitetura e qualidade localmente. Para produção, a escolha entre self-hosted e nuvem deve considerar volume, latência, custo, requisitos de privacidade, maturidade operacional e modelos aprovados pela organização.
+
+## 10. Como verificar o comportamento
 
 | O que validar | Testes relacionados |
 |---|---|
