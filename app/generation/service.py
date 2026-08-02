@@ -21,6 +21,11 @@ from app.domain.schemas import (
     GenerationMetadata,
     SourceReference,
 )
+from app.generation.grounded_answers import (
+    GROUNDED_ANSWER_VERSION,
+    build_grounded_answer,
+    rewrite_frequent_question,
+)
 from app.generation.provider import GenerationProvider, ProviderResult
 from app.guardrails.input_guardrail import ensure_safe_question
 from app.guardrails.output_guardrail import keep_safe_document_chunks
@@ -72,15 +77,16 @@ class AskService:
 
         started_at = perf_counter()
         ensure_safe_question(request.question)
+        retrieval_query = rewrite_frequent_question(request.question)
         embedding_started = perf_counter()
-        query_embeddings = await self._provider.embed([request.question])
+        query_embeddings = await self._provider.embed([retrieval_query])
         self._record_latency("ollama_embedding", embedding_started)
         if not query_embeddings:
             raise ValueError("O provedor não devolveu o vetor da pergunta")
         retrieval_started = perf_counter()
         chunks = await asyncio.to_thread(
             self._retriever.search,
-            request.question,
+            retrieval_query,
             query_embeddings[0],
             tenant_id=context.tenant_id,
             limit=self._retrieval_limit,
@@ -89,6 +95,23 @@ class AskService:
         if any(chunk.tenant_id != context.tenant_id for chunk in chunks):
             raise TenantIsolationError("O serviço recebeu dados de outro tenant")
         chunks = keep_safe_document_chunks(chunks)
+        grounded = build_grounded_answer(request.question, chunks)
+        if grounded is not None:
+            response = AskResponse(
+                answer=grounded.answer,
+                sources=[_source(chunk) for chunk in grounded.chunks],
+                confidence="high",
+                request_id=current_trace().request_id,
+                latency_ms=_elapsed_ms(started_at),
+                generation=GenerationMetadata(
+                    provider="grounded-synthesizer",
+                    model=GROUNDED_ANSWER_VERSION,
+                    prompt_version=GROUNDED_ANSWER_VERSION,
+                    status="generated",
+                    attempts=0,
+                ),
+            )
+            return self._finalize(response, chunks, context)
         evidence_chunks = [chunk for chunk in chunks if chunk.score >= self._evidence_min_score][
             : self._max_evidence_chunks
         ]

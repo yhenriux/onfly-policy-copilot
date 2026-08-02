@@ -40,6 +40,40 @@ FastAPI ── autenticação e guardrails
 
 RAG significa geração apoiada por recuperação: o modelo recebe trechos encontrados nas políticas em vez de responder apenas com conhecimento próprio.
 
+## Pipeline RAG em detalhes
+
+O pipeline abaixo explica o caminho completo entre uma política e uma resposta. Os nomes técnicos aparecem acompanhados de uma explicação simples.
+
+```text
+Documentos de políticas
+        ↓
+Leitura, normalização e divisão por seção
+        ↓
+Embeddings com all-minilm
+        ↓
+Qdrant + índice BM25
+        ↓
+Pergunta autenticada e filtro obrigatório por empresa
+        ↓
+Busca híbrida → RRF → CrossEncoder
+        ↓
+Contexto sem repetições e com tamanho controlado
+        ↓
+Resposta fundamentada, fontes e confiança
+```
+
+1. Os documentos sintéticos de cada empresa são lidos, normalizados e divididos em trechos menores. A divisão preserva títulos e seções para manter o sentido da regra.
+2. Cada trecho recebe um *embedding*: uma representação numérica do seu significado, gerada localmente pelo modelo `all-minilm`.
+3. Os trechos, seus embeddings e metadados são guardados no Qdrant. Os metadados incluem empresa, documento, versão, seção, validade e estado ativo. Hashes evitam a duplicação durante uma nova carga.
+4. Ao entrar, a pessoa recebe um token sintético assinado. A empresa vem desse token; ela nunca é enviada pelo navegador no corpo da pergunta.
+5. A pergunta passa por uma checagem de segurança. Em seguida, a busca vetorial encontra trechos com significado parecido e o BM25 encontra palavras importantes. O filtro da empresa autenticada é aplicado em toda recuperação.
+6. O RRF combina os dois rankings de busca. Depois, o CrossEncoder compara diretamente pergunta e trecho para ordenar os candidatos mais relevantes.
+7. O sistema remove trechos repetidos e limita o tamanho do contexto. Assim, o modelo recebe evidências suficientes sem uma quantidade desnecessária de texto.
+8. Para as perguntas frequentes de bagagem, hotel, reembolso e transporte por aplicativo, a aplicação monta uma resposta clara a partir das fontes recuperadas. Nas demais perguntas, o `llama3.2:1b` gera uma resposta estruturada usando somente o contexto autorizado.
+9. A API devolve a resposta, as fontes usadas, a confiança e um `request_id`, que é o identificador da requisição. Quando não há evidência suficiente, ela informa isso em vez de inventar uma política.
+
+Leia a descrição completa em [Pipeline RAG](docs/rag-pipeline.md).
+
 ## Tecnologias
 
 | Tecnologia | Função |
@@ -173,6 +207,7 @@ tests/               testes unitários, integrados e de segurança
 ## Documentação técnica
 
 - [Arquitetura](docs/architecture.md)
+- [Pipeline RAG](docs/rag-pipeline.md)
 - [Ameaças e controles](docs/threat-model.md)
 - [Plano e métricas de avaliação](docs/evaluation-plan.md)
 - [Operação e investigação de incidentes](docs/runbook.md)

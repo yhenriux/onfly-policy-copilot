@@ -75,7 +75,7 @@ def _chunk() -> RetrievedChunk:
 
 
 def _request() -> AskRequest:
-    return AskRequest(question="Quando devo solicitar o reembolso?")
+    return AskRequest(question="Quando devo prestar contas?")
 
 
 def _context() -> AuthenticatedContext:

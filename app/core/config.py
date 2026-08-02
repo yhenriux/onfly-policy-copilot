@@ -43,13 +43,13 @@ class Settings(BaseSettings):
     qdrant_api_key: SecretStr | None = None
 
     retrieval_top_k: int = Field(default=10, ge=1, le=100)
-    context_top_k: int = Field(default=5, ge=1, le=50)
+    context_top_k: int = Field(default=10, ge=1, le=50)
     rrf_k: int = Field(default=60, ge=1, le=1_000)
     dense_weight: float = Field(default=1.0, ge=0, le=10)
     lexical_weight: float = Field(default=1.0, ge=0, le=10)
     cross_encoder_model: str = "cross-encoder/ms-marco-MiniLM-L6-v2"
     rerank_top_n: int = Field(default=10, ge=1, le=100)
-    max_context_characters: int = Field(default=3_000, ge=200, le=50_000)
+    max_context_characters: int = Field(default=5_000, ge=200, le=50_000)
     context_redundancy_threshold: float = Field(default=0.8, gt=0, le=1)
     evidence_min_score: float = Field(default=0.5, ge=0, le=1)
     generation_max_evidence_chunks: int = Field(default=1, ge=1, le=10)
