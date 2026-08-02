@@ -134,7 +134,60 @@ O token autenticado é transformado em contexto no fluxo HTTP. A composição do
 
 [`TenantGuardedRetriever.search`](../app/guardrails/tenant_guardrail.py#L20) confirma que existe empresa autenticada antes de buscar e verifica que todos os trechos recebidos pertencem à mesma empresa depois da busca. [`AskService.ask`](../app/generation/service.py#L75) repete essa conferência como defesa adicional.
 
-## 8. Como verificar o comportamento
+## 8. Guardrails, filtro de conteúdo e alinhamento da resposta
+
+Esta parte protege o fluxo em três momentos: antes da busca, depois da recuperação e antes de devolver a resposta. *Guardrail* é uma regra de proteção que limita comportamentos indesejados; ele não substitui a validação humana nem transforma a demonstração em um sistema de segurança completo.
+
+### Guardrail da pergunta
+
+[`ensure_safe_question`](../app/guardrails/input_guardrail.py#L26) é chamado logo no início de [`AskService.ask`](../app/generation/service.py#L75), antes de gerar embedding ou consultar qualquer documento.
+
+O controle normaliza letras maiúsculas, minúsculas e acentos com [`normalize_security_text`](../app/guardrails/input_guardrail.py#L17). Em seguida, compara a pergunta com padrões conhecidos de tentativa de *prompt injection*, como pedidos para ignorar instruções, revelar o prompt do sistema ou consultar a política de outra empresa.
+
+**Por que funciona:** a pergunta maliciosa é interrompida antes de consumir o modelo ou alcançar a base de conhecimento. O teste [`test_known_prompt_injection_is_blocked_before_embedding`](../tests/security/test_prompt_injection.py#L18) confirma que nem mesmo o embedding é chamado nesses casos.
+
+**Limite consciente:** este é um detector baseado em padrões conhecidos. Ele reduz ataques simples e demonstráveis, mas em produção precisaria ser complementado por monitoramento, revisão contínua de padrões e controles adicionais.
+
+### Filtro de conteúdo recuperado
+
+Documentos também podem conter uma frase que tenta se passar por instrução do sistema. Por isso, [`keep_safe_document_chunks`](../app/guardrails/output_guardrail.py#L26) remove do contexto trechos que contenham padrões maliciosos, como “ignore previous instructions” ou “revele o segredo”.
+
+O filtro é aplicado em [`AskService.ask`](../app/generation/service.py#L75) logo depois da busca e antes da síntese ou geração. Portanto, o conteúdo suspeito não é enviado ao `llama3.2:1b`.
+
+**Por que funciona:** o modelo recebe documentos como dados, não como comandos. Além do filtro, o prompt do sistema estabelece que somente evidências autorizadas podem sustentar a resposta. O teste [`test_malicious_document_instruction_never_reaches_generator`](../tests/security/test_prompt_injection.py#L28) comprova que o gerador não é acionado quando o único trecho recuperado é malicioso.
+
+### Alinhamento com evidências autorizadas
+
+O alinhamento do projeto não depende apenas de uma frase no prompt. Ele combina regras de instrução, validação estrutural e conferência das fontes:
+
+1. [`SYSTEM_PROMPT`](../app/generation/prompts.py#L7) obriga o modelo a usar somente as evidências recebidas, preservar valores e condições e reconhecer ausência de evidência.
+2. [`build_user_prompt`](../app/generation/prompts.py#L17) identifica as fontes por posição. Isso permite verificar depois quais trechos foram citados.
+3. [`OllamaProvider.generate`](../app/generation/ollama_provider.py#L118) exige saída JSON no formato definido por `GenerationOutput`, validado com Pydantic. Isso evita aceitar texto livre fora do contrato esperado.
+4. [`_response_from_generation`](../app/generation/service.py#L129) rejeita citações de posições que não estavam no contexto autorizado.
+5. Quando o modelo pequeno responde com baixa confiança ou formato inválido, [`_degraded_response`](../app/generation/service.py#L174) mostra a orientação recuperada em vez de inventar uma interpretação.
+6. Quando não existe evidência acima do limite mínimo, [`_response_without_evidence`](../app/generation/service.py#L153) responde sem chamar o gerador.
+
+**Por que funciona:** o modelo não recebe uma pergunta sem contexto, não pode referenciar uma fonte que não recebeu e não é a única barreira contra uma resposta não fundamentada. A aplicação mantém o texto encontrado como fallback controlado.
+
+### Isolamento entre empresas como guardrail de dados
+
+O isolamento também é uma proteção de segurança. [`MockAuthService`](../app/core/auth.py#L30) assina um token que contém a empresa autorizada. A composição em [`_build_ask_service`](../app/main.py#L49) aplica [`TenantGuardedRetriever`](../app/guardrails/tenant_guardrail.py#L20) ao mecanismo de busca.
+
+Esse guardrail exige a empresa antes da busca e confere cada trecho retornado depois dela. Em paralelo, o Qdrant filtra `tenant_id`, `is_active` e `is_deleted` em [`QdrantVectorStore.search`](../app/retrieval/dense.py#L153).
+
+**Por que funciona:** o navegador não escolhe a empresa no corpo da pergunta, a busca não acontece sem empresa autenticada e um resultado de outra empresa interrompe o fluxo. O teste [`test_post_retrieval_validation_blocks_cross_tenant_payload`](../tests/security/test_tenant_isolation.py#L44) valida exatamente esse cenário.
+
+### Resumo dos controles
+
+| Risco | Controle implementado | Código principal |
+|---|---|---|
+| Pergunta tenta mudar regras do assistente | Normalização e bloqueio por padrões conhecidos | [`input_guardrail.py`](../app/guardrails/input_guardrail.py) |
+| Documento tenta virar instrução | Remoção de trechos suspeitos antes do modelo | [`output_guardrail.py`](../app/guardrails/output_guardrail.py) |
+| Modelo inventa uma regra | Prompt com evidências, saída estruturada e fallback | [`prompts.py`](../app/generation/prompts.py) e [`service.py`](../app/generation/service.py) |
+| Fonte não autorizada é citada | Validação das posições citadas | [`service.py`](../app/generation/service.py#L129) |
+| Empresa A acessa documentos da empresa B | Token assinado, filtros no Qdrant e validação dupla | [`auth.py`](../app/core/auth.py), [`dense.py`](../app/retrieval/dense.py) e [`tenant_guardrail.py`](../app/guardrails/tenant_guardrail.py) |
+
+## 9. Como verificar o comportamento
 
 | O que validar | Testes relacionados |
 |---|---|
