@@ -7,6 +7,8 @@ from app.domain.models import RetrievedChunk
 
 
 class TenantRetriever(Protocol):
+    """Contrato mínimo de uma busca que exige contexto de empresa."""
+
     def search(
         self,
         query: str,
@@ -14,7 +16,9 @@ class TenantRetriever(Protocol):
         *,
         tenant_id: str,
         limit: int,
-    ) -> list[RetrievedChunk]: ...
+    ) -> list[RetrievedChunk]:
+        """Busca trechos somente dentro da empresa explicitamente autorizada."""
+        ...
 
 
 class TenantGuardedRetriever:
@@ -31,6 +35,7 @@ class TenantGuardedRetriever:
         tenant_id: str,
         limit: int,
     ) -> list[RetrievedChunk]:
+        """Valida a empresa antes da busca e confere cada resultado depois dela."""
         if not tenant_id.strip():
             raise TenantIsolationError("A recuperação exige um tenant autenticado")
         chunks = self._retriever.search(

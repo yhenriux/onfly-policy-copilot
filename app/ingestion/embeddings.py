@@ -9,7 +9,9 @@ from app.domain.models import DocumentChunk
 class EmbeddingProvider(Protocol):
     """Operação necessária para transformar textos em vetores."""
 
-    def embed(self, texts: list[str]) -> Awaitable[list[list[float]]]: ...
+    def embed(self, texts: list[str]) -> Awaitable[list[list[float]]]:
+        """Devolve um vetor para cada texto sem impor um fornecedor específico."""
+        ...
 
 
 async def embed_chunks(

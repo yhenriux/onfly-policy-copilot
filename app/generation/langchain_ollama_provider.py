@@ -47,17 +47,21 @@ class LangChainOllamaProvider:
 
     @property
     def provider_name(self) -> str:
+        """Identifica nos traces que a integração passou pelo LangChain."""
         return "langchain-ollama"
 
     @property
     def generation_model(self) -> str:
+        """Expõe o modelo local usado para permitir auditoria da resposta."""
         return self._generation_model
 
     @property
     def prompt_version(self) -> str:
+        """Relaciona cada resposta à versão das instruções enviadas ao modelo."""
         return PROMPT_VERSION
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
+        """Converte textos em vetores usando a interface padronizada do LangChain."""
         try:
             vectors = await self._embeddings.aembed_documents(texts)
             return [[float(value) for value in vector] for vector in vectors]
@@ -67,6 +71,7 @@ class LangChainOllamaProvider:
             ) from error
 
     async def generate(self, question: str, chunks: list[RetrievedChunk]) -> ProviderResult:
+        """Gera saída estruturada somente com os trechos autorizados pelo retrieval."""
         messages = [
             SystemMessage(content=SYSTEM_PROMPT),
             HumanMessage(content=build_user_prompt(question, chunks)),

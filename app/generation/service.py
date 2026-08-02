@@ -45,13 +45,17 @@ class Retriever(Protocol):
         *,
         tenant_id: str,
         limit: int,
-    ) -> list[RetrievedChunk]: ...
+    ) -> list[RetrievedChunk]:
+        """Recupera evidências já filtradas pela empresa autenticada."""
+        ...
 
 
 class AskHandler(Protocol):
     """Operação assíncrona usada pela rota HTTP de perguntas."""
 
-    async def ask(self, request: AskRequest, context: AuthenticatedContext) -> AskResponse: ...
+    async def ask(self, request: AskRequest, context: AuthenticatedContext) -> AskResponse:
+        """Executa uma pergunta usando somente o contexto autenticado recebido."""
+        ...
 
 
 class AskService:

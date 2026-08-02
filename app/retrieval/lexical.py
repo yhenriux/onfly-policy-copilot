@@ -16,7 +16,9 @@ _TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
 class PayloadSource(Protocol):
     """Fonte que fornece somente trechos ativos da empresa solicitada."""
 
-    def active_payloads(self, *, tenant_id: str) -> list[dict[str, Any]]: ...
+    def active_payloads(self, *, tenant_id: str) -> list[dict[str, Any]]:
+        """Lista apenas textos pesquisáveis da empresa informada."""
+        ...
 
 
 def tokenize(text: str) -> list[str]:

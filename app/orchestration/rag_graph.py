@@ -41,6 +41,7 @@ class LangGraphAskHandler:
 
     @traceable(name="onfly_policy_copilot_rag_graph")
     async def ask(self, request: AskRequest, context: AuthenticatedContext) -> AskResponse:
+        """Executa o grafo mantendo o mesmo contrato público do serviço RAG."""
         initial_state: RagState = {"request": request, "context": context}
         result = cast(RagState, await self._graph.ainvoke(initial_state))
         return result["response"]

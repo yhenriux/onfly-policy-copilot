@@ -1,3 +1,4 @@
+/* Tokens visuais centralizam cores e medidas para manter a interface consistente. */
 :root {
   --ink: #0a0a0a;
   --muted: #646464;

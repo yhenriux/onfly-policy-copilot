@@ -11,7 +11,9 @@ from qdrant_client import QdrantClient
 class ReadinessChecker(Protocol):
     """Contrato pequeno para verificar Ollama e Qdrant."""
 
-    async def check(self) -> dict[str, bool]: ...
+    async def check(self) -> dict[str, bool]:
+        """Informa separadamente a disponibilidade de cada dependência externa."""
+        ...
 
 
 class LocalReadinessChecker:

@@ -36,6 +36,7 @@ def simulate() -> dict[str, Any]:
 
 
 def main() -> None:
+    """Registra uma falha simulada e comprova o retorno à versão estável."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--output",

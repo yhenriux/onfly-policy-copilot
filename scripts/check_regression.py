@@ -8,6 +8,7 @@ from app.evaluation.runner import check_regression_gate
 
 
 def main() -> None:
+    """Compara um relatório de avaliação com limites mínimos versionados."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument(

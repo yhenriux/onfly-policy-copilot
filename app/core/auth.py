@@ -51,6 +51,7 @@ class MockAuthService:
 
     @property
     def ttl_seconds(self) -> int:
+        """Informa por quantos segundos um token demonstrativo permanece válido."""
         return self._ttl_seconds
 
     def login(self, username: str, password: str) -> tuple[str, AuthenticatedContext]:

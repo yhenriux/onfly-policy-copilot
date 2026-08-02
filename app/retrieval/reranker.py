@@ -12,7 +12,9 @@ from app.domain.models import RetrievedChunk
 class PairScorer(Protocol):
     """Contrato mínimo de um modelo que pontua pares de textos."""
 
-    def predict(self, sentences: list[tuple[str, str]], **kwargs: object) -> Sequence[float]: ...
+    def predict(self, sentences: list[tuple[str, str]], **kwargs: object) -> Sequence[float]:
+        """Atribui uma pontuação a cada par de pergunta e evidência."""
+        ...
 
 
 class LocalCrossEncoderReranker:
