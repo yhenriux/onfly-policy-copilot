@@ -30,12 +30,15 @@ from app.domain.schemas import (
     TokenResponse,
 )
 from app.feedback.store import InMemoryFeedbackStore
+from app.generation.langchain_ollama_provider import LangChainOllamaProvider
 from app.generation.ollama_provider import OllamaProvider
 from app.generation.service import AskHandler, AskService
 from app.guardrails.tenant_guardrail import TenantGuardedRetriever
 from app.observability.health import LocalReadinessChecker, ReadinessChecker
+from app.observability.langsmith import configure_langsmith
 from app.observability.metrics import operational_metrics
 from app.observability.tracing import current_trace, finish_trace, start_trace
+from app.orchestration.rag_graph import LangGraphAskHandler
 from app.retrieval.contextual import ContextualRetriever
 from app.retrieval.factory import build_vector_store
 from app.retrieval.hybrid import HybridRetriever
@@ -51,10 +54,13 @@ class HealthResponse(TypedDict):
     service: str
 
 
-def _build_ask_service(settings: Settings) -> AskService:
+def _build_ask_service(settings: Settings) -> AskHandler:
     """Monta o RAG local, que busca trechos antes de gerar a resposta."""
 
-    provider = OllamaProvider(
+    provider_class = (
+        LangChainOllamaProvider if settings.llm_integration == "langchain" else OllamaProvider
+    )
+    provider = provider_class(
         base_url=str(settings.ollama_base_url),
         generation_model=settings.ollama_generation_model,
         embedding_model=settings.ollama_embedding_model,
@@ -78,13 +84,14 @@ def _build_ask_service(settings: Settings) -> AskService:
         redundancy_threshold=settings.context_redundancy_threshold,
     )
     retriever = TenantGuardedRetriever(contextual)
-    return AskService(
+    service = AskService(
         provider=provider,
         retriever=retriever,
         retrieval_limit=settings.context_top_k,
         evidence_min_score=settings.evidence_min_score,
         max_evidence_chunks=settings.generation_max_evidence_chunks,
     )
+    return LangGraphAskHandler(service) if settings.workflow_engine == "langgraph" else service
 
 
 def create_app(
@@ -97,6 +104,7 @@ def create_app(
     """Monta a API com as configurações informadas para a execução."""
 
     runtime_settings = settings or get_settings()
+    configure_langsmith(runtime_settings)
     runtime_auth = auth_service or MockAuthService(
         runtime_settings.auth_users_path,
         secret=runtime_settings.auth_token_secret.get_secret_value(),

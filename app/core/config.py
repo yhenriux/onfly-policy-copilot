@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     ollama_timeout_seconds: float = Field(default=60.0, gt=0)
     ollama_retry_attempts: int = Field(default=3, ge=1, le=10)
     ollama_retry_backoff_seconds: float = Field(default=0.25, ge=0, le=30)
+    llm_integration: Literal["http", "langchain"] = "langchain"
+    workflow_engine: Literal["service", "langgraph"] = "langgraph"
+
+    langsmith_tracing: bool = False
+    langsmith_api_key: SecretStr | None = None
+    langsmith_project: str = "onfly-policy-copilot"
 
     qdrant_url: AnyHttpUrl = AnyHttpUrl("http://localhost:6333")
     qdrant_mode: Literal["local", "server"] = "local"

@@ -211,6 +211,7 @@ tests/               testes unitários, integrados e de segurança
 - [Pipeline RAG](docs/rag-pipeline-explicacao-local-v1.md)
 - [Prova de conceito](docs/rag-prova-validacao-tecnica-v1.md)
 - [Guia do código RAG](docs/rag-codigo-navegacao-tecnica-v1.md)
+- [Integração LangChain, LangGraph e LangSmith](docs/rag-frameworks-integracao-tecnica-v1.md)
 - [Ameaças e controles](docs/rag-seguranca-modelagem-tecnica-v1.md)
 - [Plano e métricas de avaliação](docs/rag-avaliacao-metricas-qualidade-v1.md)
 - [Operação e investigação de incidentes](docs/rag-operacao-procedimento-local-v1.md)
