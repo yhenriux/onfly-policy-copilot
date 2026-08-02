@@ -5,6 +5,15 @@ from pathlib import Path
 from typing import Any, cast
 from uuid import NAMESPACE_URL, uuid5
 
+from llama_index.core import Document
+from llama_index.core.schema import BaseNode, TextNode
+from llama_index.core.vector_stores import (
+    FilterOperator,
+    MetadataFilter,
+    MetadataFilters,
+    VectorStoreQuery,
+)
+from llama_index.vector_stores.qdrant import QdrantVectorStore as LlamaIndexQdrantVectorStore
 from qdrant_client import QdrantClient, models
 
 from app.core.exceptions import RetrievalUnavailableError
@@ -15,6 +24,18 @@ def _field_condition(key: str, value: str | bool) -> models.FieldCondition:
     """Cria uma condição simples para filtrar metadados no Qdrant."""
 
     return models.FieldCondition(key=key, match=models.MatchValue(value=value))
+
+
+def _external_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Mantém o contrato do projeto estável apesar dos nomes internos do LlamaIndex."""
+
+    return {
+        **payload,
+        "document_id": payload.get("policy_document_id"),
+        "text": payload.get("policy_text"),
+        "is_active": payload.get("search_status") == "active",
+        "is_deleted": payload.get("deletion_status") == "deleted",
+    }
 
 
 class QdrantVectorStore:
@@ -39,6 +60,11 @@ class QdrantVectorStore:
             else QdrantClient(path=str(path))
         )
         self._collection_name = collection_name
+        self._llama_index_store = LlamaIndexQdrantVectorStore(
+            collection_name=collection_name,
+            client=self._client,
+            flat_metadata=True,
+        )
 
     def ensure_collection(self, vector_size: int) -> None:
         """Cria a coleção uma vez usando similaridade de cosseno."""
@@ -66,14 +92,14 @@ class QdrantVectorStore:
             return models.Filter(
                 must=[
                     _field_condition("tenant_id", tenant_id),
-                    _field_condition("document_id", document_id),
+                    _field_condition("policy_document_id", document_id),
                     _field_condition("version", version),
                 ]
             )
         return models.Filter(
             must=[
                 _field_condition("tenant_id", tenant_id),
-                _field_condition("document_id", document_id),
+                    _field_condition("policy_document_id", document_id),
             ]
         )
 
@@ -90,10 +116,15 @@ class QdrantVectorStore:
                 version=version,
             ),
             limit=10_000,
-            with_payload=["document_hash"],
+            with_payload=True,
             with_vectors=False,
         )
-        return {str(cast(dict[str, Any], point.payload or {})["document_hash"]) for point in points}
+        payloads = [cast(dict[str, Any], point.payload or {}) for point in points]
+        # Registros anteriores não têm o nó serializado pelo LlamaIndex. Reindexá-los
+        # com o mesmo identificador substitui o vetor antigo sem duplicar conteúdo.
+        if any("_node_content" not in payload for payload in payloads):
+            return set()
+        return {str(payload["document_hash"]) for payload in payloads}
 
     def deactivate_versions(self, *, tenant_id: str, document_id: str) -> None:
         """Mantém versões antigas para auditoria, mas as retira da busca."""
@@ -102,7 +133,7 @@ class QdrantVectorStore:
             return
         self._client.set_payload(
             collection_name=self._collection_name,
-            payload={"is_active": False},
+            payload={"search_status": "inactive"},
             points=self._document_filter(tenant_id=tenant_id, document_id=document_id),
             wait=True,
         )
@@ -113,18 +144,11 @@ class QdrantVectorStore:
         if len(chunks) != len(embeddings):
             raise ValueError("Cada trecho deve possuir exatamente um vetor")
 
-        points = [
-            models.PointStruct(
-                id=str(
-                    uuid5(
-                        NAMESPACE_URL,
-                        f"{chunk.tenant_id}:{chunk.document_id}:{chunk.version}:{chunk.chunk_hash}",
-                    )
-                ),
-                vector=embedding,
-                payload={
+        nodes: list[BaseNode] = []
+        for chunk, embedding in zip(chunks, embeddings, strict=True):
+            metadata = {
                     "tenant_id": chunk.tenant_id,
-                    "document_id": chunk.document_id,
+                    "policy_document_id": chunk.document_id,
                     "title": chunk.title,
                     "version": chunk.version,
                     "valid_from": chunk.valid_from.isoformat(),
@@ -135,18 +159,29 @@ class QdrantVectorStore:
                     "chunk_id": chunk.chunk_id,
                     "position": chunk.position,
                     "section": chunk.section,
-                    "text": chunk.text,
+                    "policy_text": chunk.text,
                     "document_hash": chunk.document_hash,
                     "chunk_hash": chunk.chunk_hash,
-                    "is_active": True,
-                    "is_deleted": False,
-                },
+                    "search_status": "active",
+                    "deletion_status": "available",
+                }
+            document = Document(text=chunk.text, metadata=metadata)
+            nodes.append(
+                TextNode(
+                    id_=str(
+                        uuid5(
+                            NAMESPACE_URL,
+                            f"{chunk.tenant_id}:{chunk.document_id}:{chunk.version}:{chunk.chunk_hash}",
+                        )
+                    ),
+                    text=document.text,
+                    metadata=document.metadata,
+                    embedding=embedding,
+                )
             )
-            for chunk, embedding in zip(chunks, embeddings, strict=True)
-        ]
 
         try:
-            self._client.upsert(collection_name=self._collection_name, points=points, wait=True)
+            self._llama_index_store.add(nodes)
         except Exception as error:
             raise RetrievalUnavailableError("Não foi possível gravar os trechos") from error
 
@@ -162,30 +197,39 @@ class QdrantVectorStore:
         if not tenant_id.strip():
             raise ValueError("tenant_id é obrigatório em toda busca")
         try:
-            response = self._client.query_points(
-                collection_name=self._collection_name,
-                query=query_vector,
-                query_filter=models.Filter(
-                    must=[
-                        _field_condition("tenant_id", tenant_id),
-                        _field_condition("is_active", True),
-                        _field_condition("is_deleted", False),
-                    ]
-                ),
-                limit=limit,
-                with_payload=True,
-                with_vectors=False,
+            response = self._llama_index_store.query(
+                VectorStoreQuery(
+                    query_embedding=query_vector,
+                    similarity_top_k=limit,
+                    filters=MetadataFilters(
+                        filters=[
+                            MetadataFilter(
+                                key="tenant_id", value=tenant_id, operator=FilterOperator.EQ
+                            ),
+                            MetadataFilter(
+                                key="search_status", value="active", operator=FilterOperator.EQ
+                            ),
+                            MetadataFilter(
+                                key="deletion_status",
+                                value="available",
+                                operator=FilterOperator.EQ,
+                            ),
+                        ]
+                    ),
+                )
             )
         except Exception as error:
             raise RetrievalUnavailableError("Não foi possível pesquisar as políticas") from error
 
         results: list[RetrievedChunk] = []
-        for rank, point in enumerate(response.points, start=1):
-            payload = cast(dict[str, Any], point.payload or {})
+        for rank, (node, score) in enumerate(
+            zip(response.nodes or [], response.similarities or [], strict=True), start=1
+        ):
+            payload = node.metadata
             results.append(
                 RetrievedChunk(
                     tenant_id=str(payload["tenant_id"]),
-                    document_id=str(payload["document_id"]),
+                    document_id=str(payload["policy_document_id"]),
                     title=str(payload["title"]),
                     version=str(payload["version"]),
                     valid_from=date.fromisoformat(str(payload["valid_from"])),
@@ -198,11 +242,11 @@ class QdrantVectorStore:
                     chunk_id=str(payload["chunk_id"]),
                     position=int(payload["position"]),
                     section=str(payload["section"]),
-                    text=str(payload["text"]),
+                    text=str(payload["policy_text"]),
                     document_hash=str(payload["document_hash"]),
                     chunk_hash=str(payload["chunk_hash"]),
-                    score=float(point.score),
-                    dense_score=float(point.score),
+                    score=float(score),
+                    dense_score=float(score),
                     dense_rank=rank,
                 )
             )
@@ -218,15 +262,15 @@ class QdrantVectorStore:
             scroll_filter=models.Filter(
                 must=[
                     _field_condition("tenant_id", tenant_id),
-                    _field_condition("is_active", True),
-                    _field_condition("is_deleted", False),
+                    _field_condition("search_status", "active"),
+                    _field_condition("deletion_status", "available"),
                 ]
             ),
             limit=10_000,
             with_payload=True,
             with_vectors=False,
         )
-        return [cast(dict[str, Any], point.payload or {}) for point in points]
+        return [_external_payload(cast(dict[str, Any], point.payload or {})) for point in points]
 
     def logical_delete(self, *, tenant_id: str, document_id: str) -> int:
         """Marca todas as versões como excluídas sem apagar o histórico."""
@@ -242,7 +286,7 @@ class QdrantVectorStore:
         if affected:
             self._client.set_payload(
                 collection_name=self._collection_name,
-                payload={"is_active": False, "is_deleted": True},
+                payload={"search_status": "inactive", "deletion_status": "deleted"},
                 points=document_filter,
                 wait=True,
             )
@@ -258,7 +302,7 @@ class QdrantVectorStore:
             with_payload=True,
             with_vectors=False,
         )
-        return [cast(dict[str, Any], point.payload or {}) for point in points]
+        return [_external_payload(cast(dict[str, Any], point.payload or {})) for point in points]
 
     def count(self, *, active_only: bool = False) -> int:
         """Informa quantos trechos estão gravados na coleção."""
@@ -267,8 +311,8 @@ class QdrantVectorStore:
         if active_only:
             count_filter = models.Filter(
                 must=[
-                    _field_condition("is_active", True),
-                    _field_condition("is_deleted", False),
+                    _field_condition("search_status", "active"),
+                    _field_condition("deletion_status", "available"),
                 ]
             )
         return int(

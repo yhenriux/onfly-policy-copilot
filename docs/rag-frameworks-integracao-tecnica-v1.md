@@ -1,4 +1,4 @@
-# Integração de LangChain, LangGraph e LangSmith
+# Integração de LangChain, LangGraph, LangSmith e LlamaIndex
 
 ## Decisão
 
@@ -9,6 +9,12 @@ O projeto mantém suas regras próprias de RAG e usa os frameworks como camadas 
 [`app/generation/langchain_ollama_provider.py`](../app/generation/langchain_ollama_provider.py) implementa o contrato interno de provedor usando `ChatOllama` e `OllamaEmbeddings`. Ele mantém os modelos locais `llama3.2:1b` e `all-minilm`, mas passa a usar as interfaces intercambiáveis do LangChain.
 
 O seletor `LLM_INTEGRATION` permite escolher `langchain` (padrão) ou `http` (adaptador HTTP anterior). Essa escolha é feita em [`app/main.py`](../app/main.py). O contrato `GenerationProvider` continua protegendo o restante do sistema contra mudanças de fornecedor.
+
+## LlamaIndex
+
+[`app/retrieval/dense.py`](../app/retrieval/dense.py) usa `Document` e `TextNode` do LlamaIndex para representar cada trecho de política e o adaptador oficial `QdrantVectorStore` para gravar e consultar vetores no Qdrant. Os metadados preservam empresa, documento, versão, seção, validade e estado do conteúdo.
+
+O filtro da empresa continua obrigatório dentro da consulta vetorial. BM25, RRF, CrossEncoder, guardrails e a resposta final permanecem no código próprio do projeto, pois são regras de segurança e qualidade que não devem ser delegadas ao framework.
 
 ## LangGraph
 
