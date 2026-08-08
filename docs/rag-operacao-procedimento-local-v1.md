@@ -55,6 +55,7 @@ P95 significa que 95% das requisições devem terminar abaixo do limite. A API a
 - Consulte a fila em `http://localhost:15672` usando as credenciais locais do RabbitMQ.
 - Se houver erro transitório no Ollama ou Qdrant, corrija a dependência e aguarde os retries do worker.
 - Se o job estiver na dead-letter queue, preserve a mensagem antes de reprocessar manualmente.
+- Se o RabbitMQ estiver indisponível durante um retry ou envio para a DLQ, a mensagem original permanece sujeita a reentrega; confirme a recuperação do broker antes de investigar perda de job.
 - Não apague o diretório correspondente no volume `ingestion_data` enquanto o job estiver em `queued` ou `processing`.
 
 ### Redis indisponível

@@ -5,7 +5,10 @@ import re
 from app.domain.models import DocumentChunk
 from app.knowledge_graph.models import KnowledgeGraphDocument, KnowledgeGraphFact
 
-_AMOUNT_PATTERN = re.compile(r"R\$\s*([0-9]+(?:[.,][0-9]{1,2})?)", re.IGNORECASE)
+_AMOUNT_PATTERN = re.compile(
+    r"R\$\s*([0-9]{1,3}(?:\.[0-9]{3})*(?:[.,][0-9]{1,2})?|[0-9]+(?:[.,][0-9]{1,2})?)",
+    re.IGNORECASE,
+)
 _TOPIC_TERMS = (
     "alimentação",
     "hospedagem",
@@ -39,7 +42,16 @@ def _amount(text: str) -> float | None:
     match = _AMOUNT_PATTERN.search(text)
     if not match:
         return None
-    return float(match.group(1).replace(".", "").replace(",", "."))
+    raw = match.group(1)
+    if "," in raw and "." in raw:
+        normalized = raw.replace(".", "").replace(",", ".")
+    elif "," in raw:
+        normalized = raw.replace(",", ".")
+    elif raw.count(".") == 1 and len(raw.rsplit(".", 1)[1]) == 2:
+        normalized = raw
+    else:
+        normalized = raw.replace(".", "")
+    return float(normalized)
 
 
 def extract_document_graph(chunks: list[DocumentChunk]) -> KnowledgeGraphDocument:

@@ -41,6 +41,7 @@ flowchart LR
     Worker --> Storage
     Worker --> EmbedD["Ollama: embeddings"]
     Worker --> Qdrant["Qdrant: indexação"]
+    Worker --> Graph["Neo4j opcional: regras e evidências"]
     Worker --> Redis
 ```
 

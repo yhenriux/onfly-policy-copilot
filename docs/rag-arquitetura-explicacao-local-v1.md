@@ -101,3 +101,5 @@ graph LR
 ```
 
 O grafo não substitui o Qdrant: o Qdrant continua recuperando texto e embeddings para o RAG, enquanto o Neo4j permite consultas explícitas de relações por tenant. A extração atual é determinística e limitada a padrões explicáveis; a expansão para extração semântica por modelo deve preservar o chunk como evidência.
+
+As políticas do mesmo documento são versionadas no grafo. Ao gravar uma nova versão, a anterior recebe `active=false`, e as consultas retornam somente regras vinculadas à política ativa do tenant. O worker também valida que o tenant do manifesto coincide com o tenant do job antes de indexar.

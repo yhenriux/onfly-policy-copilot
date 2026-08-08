@@ -56,6 +56,8 @@ async def process_job(job: IngestionJob) -> IngestionJobStatus:
     )
     try:
         loaded = load_manifest(Path(job.manifest_path))
+        if loaded.tenant_id != job.tenant_id:
+            raise ValueError("O tenant do manifesto não corresponde ao tenant do job")
         result = await ingest_document(
             loaded,
             provider=provider,
@@ -65,7 +67,7 @@ async def process_job(job: IngestionJob) -> IngestionJobStatus:
                 overlap_chars=settings.chunk_overlap_chars,
             ),
         )
-        if graph_store is not None and result.status == "indexed":
+        if graph_store is not None:
             normalized = normalize_document(loaded)
             chunks = chunk_by_section(
                 normalized,
@@ -113,6 +115,7 @@ async def run() -> None:
 
     async with queue.iterator() as messages:
         async for message in messages:
+            forwarded = False
             try:
                 job = IngestionJob.model_validate(json.loads(message.body))
                 await process_job(job)
@@ -137,10 +140,14 @@ async def run() -> None:
                         ),
                         routing_key=destination,
                     )
+                    forwarded = True
                 except Exception:
                     logger.exception("Falha ao encaminhar job para retry ou DLQ")
             finally:
-                await message.ack()
+                if forwarded:
+                    await message.ack()
+                else:
+                    await message.nack(requeue=True)
 
 
 if __name__ == "__main__":

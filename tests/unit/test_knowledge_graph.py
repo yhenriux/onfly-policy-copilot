@@ -30,3 +30,41 @@ def test_extract_graph_fact_preserves_tenant_source_and_amount() -> None:
     assert graph.facts[0].currency == "BRL"
     assert graph.facts[0].chunk_id == "chunk_001"
     assert graph.facts[0].exceptions == ("exceto refeição com cliente",)
+
+
+def test_extract_graph_amount_accepts_brazilian_and_decimal_formats() -> None:
+    brazilian = DocumentChunk(
+        tenant_id="tenant",
+        document_id="policy",
+        title="Policy",
+        version="v1",
+        valid_from=date(2026, 1, 1),
+        valid_until=None,
+        source="policy.md",
+        chunk_id="br",
+        position=1,
+        section="Geral",
+        text="Limite R$ 1.234,56.",
+        document_hash="document",
+        chunk_hash="br",
+    )
+    decimal = DocumentChunk(
+        tenant_id="tenant",
+        document_id="policy",
+        title="Policy",
+        version="v1",
+        valid_from=date(2026, 1, 1),
+        valid_until=None,
+        source="policy.md",
+        chunk_id="dec",
+        position=1,
+        section="Geral",
+        text="Limite R$ 130.00.",
+        document_hash="document",
+        chunk_hash="dec",
+    )
+
+    graph = extract_document_graph([brazilian, decimal])
+
+    assert graph.facts[0].amount == 1234.56
+    assert graph.facts[1].amount == 130.0

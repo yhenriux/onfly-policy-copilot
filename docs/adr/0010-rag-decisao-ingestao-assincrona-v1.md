@@ -16,6 +16,8 @@ O endpoint `POST /v1/ingestion` recebe um arquivo Markdown autenticado, grava o 
 
 Um worker separado consome a fila e reutiliza `app.ingestion.pipeline.ingest_document`. Ele atualiza o status no Redis, confirma a mensagem somente após concluir o processamento e reenfileira falhas até o limite configurado. Falhas que excedem o limite seguem para a dead-letter queue.
 
+O worker valida o tenant do manifesto contra o tenant do job. A etapa de grafo é idempotente e também é executada quando o pipeline de Qdrant retorna `skipped`, permitindo reconstruir o grafo depois de uma falha parcial.
+
 ```mermaid
 flowchart LR
     API["FastAPI\nPOST /v1/ingestion"] --> Storage["Volume compartilhado"]

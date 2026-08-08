@@ -38,7 +38,9 @@ class Neo4jKnowledgeGraph:
                 """
                 MATCH (tenant:Tenant {id: $tenant_id})-[:OWNS]->
                     (policy:Policy)-[:DEFINES]->(rule:Rule)
-                WHERE rule.tenant_id = $tenant_id AND toLower(rule.topic) CONTAINS toLower($topic)
+                WHERE policy.active = true AND rule.active = true
+                  AND policy.tenant_id = $tenant_id AND rule.tenant_id = $tenant_id
+                  AND toLower(rule.topic) CONTAINS toLower($topic)
                 RETURN rule.statement AS statement, rule.amount AS amount,
                        rule.currency AS currency, rule.conditions AS conditions,
                        rule.exceptions AS exceptions
@@ -54,15 +56,19 @@ class Neo4jKnowledgeGraph:
     async def _write_document(tx: Any, document: KnowledgeGraphDocument) -> None:
         await tx.run(
             """
+            OPTIONAL MATCH (old:Policy {tenant_id: $tenant_id, document_id: $document_id})
+            SET old.active = false
             MERGE (tenant:Tenant {id: $tenant_id})
             MERGE (policy:Policy {id: $policy_id})
-            SET policy.tenant_id = $tenant_id, policy.title = $title,
+            SET policy.tenant_id = $tenant_id, policy.document_id = $document_id,
+                policy.title = $title,
                 policy.version = $version, policy.valid_from = $valid_from,
-                policy.valid_until = $valid_until
+                policy.valid_until = $valid_until, policy.active = true
             MERGE (tenant)-[:OWNS]->(policy)
             """,
             tenant_id=document.tenant_id,
-            policy_id=f"{document.tenant_id}:{document.document_id}",
+            document_id=document.document_id,
+            policy_id=f"{document.tenant_id}:{document.document_id}:{document.version}",
             title=document.title,
             version=document.version,
             valid_from=document.valid_from,
@@ -76,13 +82,13 @@ class Neo4jKnowledgeGraph:
                 SET rule.tenant_id = $tenant_id, rule.topic = $topic,
                     rule.statement = $statement, rule.amount = $amount,
                     rule.currency = $currency, rule.conditions = $conditions,
-                    rule.exceptions = $exceptions
+                    rule.exceptions = $exceptions, rule.active = true
                 MERGE (policy)-[:DEFINES]->(rule)
                 MERGE (evidence:Chunk {id: $chunk_id})
                 SET evidence.tenant_id = $tenant_id, evidence.section = $section
                 MERGE (rule)-[:SUPPORTED_BY]->(evidence)
                 """,
-                policy_id=f"{document.tenant_id}:{document.document_id}",
+                policy_id=f"{document.tenant_id}:{document.document_id}:{document.version}",
                 rule_id=f"{fact.tenant_id}:{fact.document_id}:{fact.version}:{fact.chunk_id}",
                 tenant_id=fact.tenant_id,
                 topic=fact.topic,

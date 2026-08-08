@@ -10,7 +10,7 @@ O Qdrant recupera texto por similaridade e a busca lexical encontra termos relev
 
 ## Decisão
 
-Adicionar um grafo de conhecimento opcional em Neo4j. O worker constrói o grafo após indexar chunks no Qdrant. A extração inicial é determinística, limitada a tópicos, valores monetários, condições e exceções reconhecíveis. Cada nó e relação possui `tenant_id` e referência ao chunk de origem.
+Adicionar um grafo de conhecimento opcional em Neo4j. O worker constrói o grafo após indexar chunks no Qdrant. A extração inicial é determinística, limitada a tópicos, valores monetários, condições e exceções reconhecíveis. Cada regra possui `tenant_id` e referência ao chunk de origem; condições e exceções são propriedades da regra nesta primeira versão.
 
 O grafo complementa, mas não substitui, o Qdrant. A consulta explícita está disponível em `GET /v1/knowledge-graph/rules`; o fluxo textual do `/v1/ask` continua protegido pelo retrieval híbrido existente. A ativação é controlada por `KNOWLEDGE_GRAPH_ENABLED`.
 
@@ -20,8 +20,8 @@ flowchart LR
     Extract --> Tenant["Tenant"]
     Extract --> Policy["Policy"]
     Extract --> Rule["Rule"]
-    Rule --> Condition["Condição"]
-    Rule --> Exception["Exceção"]
+    Rule --> Condition["conditions property"]
+    Rule --> Exception["exceptions property"]
     Rule --> Evidence["Chunk de evidência"]
     Question["Consulta por tema"] --> Neo4j["Neo4j"]
     Neo4j --> Question

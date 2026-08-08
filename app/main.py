@@ -160,6 +160,14 @@ def create_app(
         if runtime_settings.knowledge_graph_enabled
         else None
     )
+
+    @application.on_event("shutdown")
+    async def close_runtime_clients() -> None:
+        """Fecha clientes externos criados pela API durante testes e shutdown."""
+
+        if runtime_graph is not None:
+            await runtime_graph.close()
+
     web_root = runtime_settings.web_root
     application.mount("/static", StaticFiles(directory=web_root / "static"), name="static")
 
