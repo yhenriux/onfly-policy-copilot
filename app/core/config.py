@@ -61,6 +61,12 @@ class Settings(BaseSettings):
     ingestion_storage_path: Path = Path(".local/ingestion")
     ingestion_max_file_bytes: int = Field(default=10_000_000, ge=1_024, le=100_000_000)
 
+    knowledge_graph_enabled: bool = False
+    neo4j_uri: str = "bolt://localhost:7687"
+    neo4j_username: str = "neo4j"
+    neo4j_password: SecretStr = SecretStr("local-demo-password-change-me")
+    neo4j_database: str = "neo4j"
+
     retrieval_top_k: int = Field(default=10, ge=1, le=100)
     context_top_k: int = Field(default=10, ge=1, le=50)
     rrf_k: int = Field(default=60, ge=1, le=1_000)

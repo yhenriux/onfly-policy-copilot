@@ -75,6 +75,7 @@ Os ADRs mantêm a numeração cronológica para preservar o histórico. Após o 
 | `0008-rag-decisao-observabilidade-local-v1.md` | logs, métricas e readiness |
 | `0009-rag-decisao-interface-feedback-v1.md` | front-end e feedback por requisição |
 | `0010-rag-decisao-ingestao-assincrona-v1.md` | RabbitMQ, Redis e worker de ingestão |
+| `0011-rag-decisao-grafo-conhecimento-v1.md` | Neo4j complementar ao RAG |
 
 ## Arquivos preservados por estabilidade técnica
 

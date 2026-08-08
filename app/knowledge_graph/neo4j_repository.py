@@ -1,0 +1,99 @@
+"""Persistência Neo4j do grafo de políticas."""
+
+from typing import Any
+
+from neo4j import AsyncDriver, AsyncGraphDatabase
+
+from app.knowledge_graph.models import KnowledgeGraphDocument
+
+
+class Neo4jKnowledgeGraph:
+    """Escreve nós idempotentes e relações sempre delimitadas por tenant."""
+
+    def __init__(self, uri: str, username: str, password: str, database: str) -> None:
+        self._driver: AsyncDriver = AsyncGraphDatabase.driver(uri, auth=(username, password))
+        self._database = database
+
+    async def ensure_constraints(self) -> None:
+        async with self._driver.session(database=self._database) as session:
+            await session.run(
+                "CREATE CONSTRAINT policy_tenant_id IF NOT EXISTS "
+                "FOR (n:Tenant) REQUIRE n.id IS UNIQUE"
+            )
+            await session.run(
+                "CREATE CONSTRAINT policy_rule_id IF NOT EXISTS FOR (n:Rule) REQUIRE n.id IS UNIQUE"
+            )
+
+    async def upsert_document(self, document: KnowledgeGraphDocument) -> None:
+        async with self._driver.session(database=self._database) as session:
+            await session.execute_write(self._write_document, document)
+
+    async def search_rules(
+        self, tenant_id: str, topic: str, limit: int = 5
+    ) -> list[dict[str, Any]]:
+        """Busca regras explicitamente relacionadas a um tema dentro do tenant."""
+
+        async with self._driver.session(database=self._database) as session:
+            result = await session.run(
+                """
+                MATCH (tenant:Tenant {id: $tenant_id})-[:OWNS]->
+                    (policy:Policy)-[:DEFINES]->(rule:Rule)
+                WHERE rule.tenant_id = $tenant_id AND toLower(rule.topic) CONTAINS toLower($topic)
+                RETURN rule.statement AS statement, rule.amount AS amount,
+                       rule.currency AS currency, rule.conditions AS conditions,
+                       rule.exceptions AS exceptions
+                LIMIT $limit
+                """,
+                tenant_id=tenant_id,
+                topic=topic,
+                limit=limit,
+            )
+            return [dict(record) async for record in result]
+
+    @staticmethod
+    async def _write_document(tx: Any, document: KnowledgeGraphDocument) -> None:
+        await tx.run(
+            """
+            MERGE (tenant:Tenant {id: $tenant_id})
+            MERGE (policy:Policy {id: $policy_id})
+            SET policy.tenant_id = $tenant_id, policy.title = $title,
+                policy.version = $version, policy.valid_from = $valid_from,
+                policy.valid_until = $valid_until
+            MERGE (tenant)-[:OWNS]->(policy)
+            """,
+            tenant_id=document.tenant_id,
+            policy_id=f"{document.tenant_id}:{document.document_id}",
+            title=document.title,
+            version=document.version,
+            valid_from=document.valid_from,
+            valid_until=document.valid_until,
+        )
+        for fact in document.facts:
+            await tx.run(
+                """
+                MATCH (policy:Policy {id: $policy_id})
+                MERGE (rule:Rule {id: $rule_id})
+                SET rule.tenant_id = $tenant_id, rule.topic = $topic,
+                    rule.statement = $statement, rule.amount = $amount,
+                    rule.currency = $currency, rule.conditions = $conditions,
+                    rule.exceptions = $exceptions
+                MERGE (policy)-[:DEFINES]->(rule)
+                MERGE (evidence:Chunk {id: $chunk_id})
+                SET evidence.tenant_id = $tenant_id, evidence.section = $section
+                MERGE (rule)-[:SUPPORTED_BY]->(evidence)
+                """,
+                policy_id=f"{document.tenant_id}:{document.document_id}",
+                rule_id=f"{fact.tenant_id}:{fact.document_id}:{fact.version}:{fact.chunk_id}",
+                tenant_id=fact.tenant_id,
+                topic=fact.topic,
+                statement=fact.statement,
+                amount=fact.amount,
+                currency=fact.currency,
+                conditions=list(fact.conditions),
+                exceptions=list(fact.exceptions),
+                chunk_id=fact.chunk_id,
+                section=fact.section,
+            )
+
+    async def close(self) -> None:
+        await self._driver.close()

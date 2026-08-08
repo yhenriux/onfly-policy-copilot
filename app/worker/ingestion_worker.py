@@ -10,9 +10,12 @@ from aio_pika import DeliveryMode, ExchangeType, Message
 
 from app.core.config import get_settings
 from app.generation.ollama_provider import OllamaProvider
-from app.ingestion.chunker import ChunkingConfig
+from app.ingestion.chunker import ChunkingConfig, chunk_by_section
 from app.ingestion.loaders import load_manifest
+from app.ingestion.normalizer import normalize_document
 from app.ingestion.pipeline import ingest_document
+from app.knowledge_graph.extractor import extract_document_graph
+from app.knowledge_graph.neo4j_repository import Neo4jKnowledgeGraph
 from app.messaging.redis_store import RedisJobStatusStore
 from app.messaging.schemas import IngestionJob, IngestionJobStatus
 from app.retrieval.factory import build_vector_store
@@ -41,9 +44,20 @@ async def process_job(job: IngestionJob) -> IngestionJobStatus:
         timeout_seconds=settings.ollama_timeout_seconds,
     )
     vector_store = build_vector_store(settings)
+    graph_store = (
+        Neo4jKnowledgeGraph(
+            settings.neo4j_uri,
+            settings.neo4j_username,
+            settings.neo4j_password.get_secret_value(),
+            settings.neo4j_database,
+        )
+        if settings.knowledge_graph_enabled
+        else None
+    )
     try:
+        loaded = load_manifest(Path(job.manifest_path))
         result = await ingest_document(
-            load_manifest(Path(job.manifest_path)),
+            loaded,
             provider=provider,
             vector_store=vector_store,
             chunking_config=ChunkingConfig(
@@ -51,6 +65,17 @@ async def process_job(job: IngestionJob) -> IngestionJobStatus:
                 overlap_chars=settings.chunk_overlap_chars,
             ),
         )
+        if graph_store is not None and result.status == "indexed":
+            normalized = normalize_document(loaded)
+            chunks = chunk_by_section(
+                normalized,
+                ChunkingConfig(
+                    max_chars=settings.chunk_max_chars,
+                    overlap_chars=settings.chunk_overlap_chars,
+                ),
+            )
+            await graph_store.ensure_constraints()
+            await graph_store.upsert_document(extract_document_graph(chunks))
         completed = processing.model_copy(
             update={
                 "status": "skipped" if result.status == "skipped" else "completed",
@@ -66,6 +91,8 @@ async def process_job(job: IngestionJob) -> IngestionJobStatus:
     finally:
         await provider.close()
         vector_store.close()
+        if graph_store is not None:
+            await graph_store.close()
         await status_store.close()
 
 

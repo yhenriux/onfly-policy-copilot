@@ -12,6 +12,7 @@ O projeto usa somente dados sintéticos e não representa um produto oficial da 
 - ingestão versionada e sem duplicação;
 - ingestão assíncrona por upload, RabbitMQ e worker;
 - status de jobs persistido no Redis;
+- grafo de conhecimento opcional em Neo4j para regras e relações auditáveis;
 - busca vetorial com Qdrant e busca por palavras com BM25;
 - combinação dos rankings com RRF e reordenação com CrossEncoder;
 - geração local com `llama3.2:1b` pelo Ollama;
@@ -94,6 +95,7 @@ Leia a descrição completa em [Pipeline RAG](docs/rag-pipeline-explicacao-local
 | LlamaIndex | representação dos documentos e adaptador do Qdrant |
 | RabbitMQ | fila durável, retries e dead-letter de ingestão |
 | Redis | status temporário dos jobs com TTL |
+| Neo4j | grafo opcional de políticas, regras, condições e evidências |
 | pytest, Ruff e mypy | testes, qualidade e verificação de tipos |
 | Docker Compose | API, worker, RabbitMQ, Redis e Qdrant reproduzíveis |
 
@@ -138,6 +140,7 @@ As credenciais são públicas porque pertencem somente ao conjunto sintético. O
 ## Executar com Docker
 
 O Compose inicia a API, o worker, RabbitMQ, Redis e Qdrant. API e worker compartilham o volume de uploads. O Ollama continua no computador e é acessado pelo endereço `host.docker.internal`.
+O Compose também inicia o Neo4j e habilita a construção do grafo no worker; o modo local fora do Compose mantém `KNOWLEDGE_GRAPH_ENABLED=false` por padrão.
 
 ```powershell
 docker compose build
@@ -164,6 +167,7 @@ O volume do Qdrant é preservado. Use `docker compose down --volumes` somente qu
 | `POST` | `/v1/ask` | consulta políticas autorizadas |
 | `POST` | `/v1/ingestion` | recebe uma política e enfileira a ingestão (`202`) |
 | `GET` | `/v1/ingestion/{job_id}` | consulta o status da ingestão do tenant |
+| `GET` | `/v1/knowledge-graph/rules?topic=...` | consulta regras explícitas do tenant quando Neo4j está habilitado |
 | `POST` | `/v1/feedback` | registra avaliação da resposta |
 | `GET` | `/metrics` | apresenta métricas operacionais |
 | `GET` | `/docs` | documentação interativa Swagger |

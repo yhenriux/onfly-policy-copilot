@@ -16,6 +16,9 @@ services:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       REDIS_URL: redis://redis:6379/0
       INGESTION_STORAGE_PATH: /app/.local/ingestion
+      KNOWLEDGE_GRAPH_ENABLED: "true"
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_PASSWORD: local-compose-password-change-me
     ports:
       - "8000:8000"
     extra_hosts:
@@ -26,6 +29,8 @@ services:
       rabbitmq:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      neo4j:
         condition: service_healthy
     volumes:
       - ingestion_data:/app/.local/ingestion
@@ -47,6 +52,9 @@ services:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       REDIS_URL: redis://redis:6379/0
       INGESTION_STORAGE_PATH: /app/.local/ingestion
+      KNOWLEDGE_GRAPH_ENABLED: "true"
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_PASSWORD: local-compose-password-change-me
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -55,6 +63,8 @@ services:
       rabbitmq:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      neo4j:
         condition: service_healthy
     volumes:
       - ingestion_data:/app/.local/ingestion
@@ -97,8 +107,25 @@ services:
       retries: 10
     restart: unless-stopped
 
+  neo4j:
+    image: neo4j:5.28-community
+    environment:
+      NEO4J_AUTH: neo4j/local-compose-password-change-me
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
 volumes:
   qdrant_data:
   rabbitmq_data:
   redis_data:
   ingestion_data:
+  neo4j_data:

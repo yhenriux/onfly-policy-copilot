@@ -24,6 +24,7 @@ flowchart LR
     Worker --> OllamaEmbed["Ollama: all-minilm"]
     Worker --> Qdrant
     Worker --> JobStatus
+    Worker --> Graph["Neo4j: regras e relações"]
 ```
 
 ## Fluxo de uma consulta
@@ -85,3 +86,18 @@ sequenceDiagram
 No modo local, Qdrant usa uma pasta persistente e Ollama roda no computador. No Compose, Qdrant vira um serviço HTTP persistente, RabbitMQ e Redis rodam como serviços, e API e worker montam o volume `ingestion_data`. API e worker acessam o Ollama do computador por `host.docker.internal`.
 
 O volume compartilhado é uma decisão de simplicidade para o ambiente local. Em múltiplos hosts, o contrato do job deve apontar para object storage em vez de depender de um caminho local.
+
+## Grafo de conhecimento
+
+O Neo4j é opcional fora do Compose. Quando `KNOWLEDGE_GRAPH_ENABLED=true`, o worker extrai fatos simples e auditáveis dos chunks, como tema, valor, condição, exceção e evidência de origem. Cada fato é vinculado ao tenant, à política e ao chunk original.
+
+```mermaid
+graph LR
+    Tenant["Tenant"] --> Policy["Policy"]
+    Policy --> Rule["Rule"]
+    Rule --> Condition["Condition"]
+    Rule --> Exception["Exception"]
+    Rule --> Evidence["Chunk"]
+```
+
+O grafo não substitui o Qdrant: o Qdrant continua recuperando texto e embeddings para o RAG, enquanto o Neo4j permite consultas explícitas de relações por tenant. A extração atual é determinística e limitada a padrões explicáveis; a expansão para extração semântica por modelo deve preservar o chunk como evidência.

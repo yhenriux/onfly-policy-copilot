@@ -41,6 +41,7 @@ from app.generation.langchain_ollama_provider import LangChainOllamaProvider
 from app.generation.ollama_provider import OllamaProvider
 from app.generation.service import AskHandler, AskService
 from app.guardrails.tenant_guardrail import TenantGuardedRetriever
+from app.knowledge_graph.neo4j_repository import Neo4jKnowledgeGraph
 from app.messaging.rabbitmq import JobPublisher, RabbitMQPublisher
 from app.messaging.redis_store import JobStatusStore, RedisJobStatusStore
 from app.messaging.schemas import IngestionJob, IngestionJobStatus
@@ -148,6 +149,16 @@ def create_app(
     )
     runtime_job_store = job_status_store or RedisJobStatusStore(
         runtime_settings.redis_url, runtime_settings.redis_job_ttl_seconds
+    )
+    runtime_graph = (
+        Neo4jKnowledgeGraph(
+            runtime_settings.neo4j_uri,
+            runtime_settings.neo4j_username,
+            runtime_settings.neo4j_password.get_secret_value(),
+            runtime_settings.neo4j_database,
+        )
+        if runtime_settings.knowledge_graph_enabled
+        else None
     )
     web_root = runtime_settings.web_root
     application.mount("/static", StaticFiles(directory=web_root / "static"), name="static")
@@ -375,6 +386,22 @@ def create_app(
             chunks_indexed=job_status.chunks_indexed,
             detail=job_status.detail,
         )
+
+    @application.get("/v1/knowledge-graph/rules", tags=["knowledge-graph"])
+    async def knowledge_graph_rules(
+        topic: str,
+        context: Annotated[AuthenticatedContext, Depends(authenticated_context)],
+    ) -> list[dict[str, Any]]:
+        """Consulta regras explícitas do tenant sem substituir a busca textual do RAG."""
+
+        if runtime_graph is None:
+            raise HTTPException(status_code=404, detail="Grafo de conhecimento desabilitado.")
+        try:
+            return await runtime_graph.search_rules(context.tenant_id, topic)
+        except Exception as error:
+            raise HTTPException(
+                status_code=503, detail="Grafo de conhecimento indisponível."
+            ) from error
 
     @application.post(
         "/v1/ask",
