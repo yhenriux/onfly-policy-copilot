@@ -1,10 +1,14 @@
 """Ponto de entrada da API criada com FastAPI."""
 
+import json
 import logging
+from datetime import date
+from pathlib import Path
 from time import perf_counter
 from typing import Annotated, Any, Literal, TypedDict
+from uuid import uuid4
 
-from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile, status
 from fastapi.requests import Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -26,6 +30,8 @@ from app.domain.schemas import (
     ErrorResponse,
     FeedbackRequest,
     FeedbackResponse,
+    IngestionAcceptedResponse,
+    IngestionStatusResponse,
     LoginRequest,
     TelemetryRequest,
     TokenResponse,
@@ -35,6 +41,9 @@ from app.generation.langchain_ollama_provider import LangChainOllamaProvider
 from app.generation.ollama_provider import OllamaProvider
 from app.generation.service import AskHandler, AskService
 from app.guardrails.tenant_guardrail import TenantGuardedRetriever
+from app.messaging.rabbitmq import JobPublisher, RabbitMQPublisher
+from app.messaging.redis_store import JobStatusStore, RedisJobStatusStore
+from app.messaging.schemas import IngestionJob, IngestionJobStatus
 from app.observability.health import LocalReadinessChecker, ReadinessChecker
 from app.observability.langsmith import configure_langsmith, trace_user_event
 from app.observability.metrics import operational_metrics
@@ -101,6 +110,8 @@ def create_app(
     auth_service: MockAuthService | None = None,
     readiness_checker: ReadinessChecker | None = None,
     feedback_store: InMemoryFeedbackStore | None = None,
+    job_publisher: JobPublisher | None = None,
+    job_status_store: JobStatusStore | None = None,
 ) -> FastAPI:
     """Monta a API com as configurações informadas para a execução."""
 
@@ -129,6 +140,15 @@ def create_app(
         collection=runtime_settings.qdrant_collection,
     )
     runtime_feedback = feedback_store or InMemoryFeedbackStore()
+    runtime_publisher = job_publisher or RabbitMQPublisher(
+        runtime_settings.rabbitmq_url,
+        runtime_settings.rabbitmq_exchange,
+        runtime_settings.rabbitmq_queue,
+        runtime_settings.rabbitmq_dead_letter_queue,
+    )
+    runtime_job_store = job_status_store or RedisJobStatusStore(
+        runtime_settings.redis_url, runtime_settings.redis_job_ttl_seconds
+    )
     web_root = runtime_settings.web_root
     application.mount("/static", StaticFiles(directory=web_root / "static"), name="static")
 
@@ -248,6 +268,115 @@ def create_app(
         )
 
     @application.post(
+        "/v1/ingestion",
+        response_model=IngestionAcceptedResponse,
+        status_code=status.HTTP_202_ACCEPTED,
+        tags=["ingestion"],
+    )
+    async def ingestion(
+        file: Annotated[UploadFile, File(description="Arquivo Markdown da política")],
+        document_id: Annotated[str, Form(min_length=1, max_length=100)],
+        title: Annotated[str, Form(min_length=3, max_length=200)],
+        version: Annotated[str, Form(pattern=r"^v[1-9][0-9]*$")],
+        valid_from: Annotated[date, Form()],
+        context: Annotated[AuthenticatedContext, Depends(authenticated_context)],
+        valid_until: Annotated[date | None, Form()] = None,
+    ) -> IngestionAcceptedResponse:
+        """Persiste o upload e enfileira a ingestão sem bloquear pela geração de embeddings."""
+
+        if file.filename is None or not file.filename.lower().endswith(".md"):
+            raise HTTPException(status_code=400, detail="O arquivo deve possuir extensão .md.")
+        if valid_until is not None and valid_until < valid_from:
+            raise HTTPException(
+                status_code=400, detail="valid_until não pode ser anterior a valid_from."
+            )
+
+        job_id = uuid4()
+        job_directory = runtime_settings.ingestion_storage_path / str(job_id)
+        job_directory.mkdir(parents=True, exist_ok=False)
+        document_path = job_directory / "policy.md"
+        manifest_path = job_directory / "metadata.json"
+        try:
+            content = await file.read(runtime_settings.ingestion_max_file_bytes + 1)
+            if len(content) > runtime_settings.ingestion_max_file_bytes:
+                raise HTTPException(
+                    status_code=413, detail="O arquivo excede o tamanho máximo permitido."
+                )
+            if not content.strip():
+                raise HTTPException(status_code=400, detail="O arquivo não pode estar vazio.")
+            document_path.write_bytes(content)
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "tenant_id": context.tenant_id,
+                        "document_id": document_id,
+                        "title": title,
+                        "version": version,
+                        "valid_from": valid_from.isoformat(),
+                        "valid_until": valid_until.isoformat() if valid_until else None,
+                        "file": document_path.name,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            job = IngestionJob(
+                job_id=job_id,
+                request_id=current_trace().request_id,
+                tenant_id=context.tenant_id,
+                document_id=document_id,
+                version=version,
+                manifest_path=str(manifest_path),
+            )
+            await runtime_job_store.set(
+                IngestionJobStatus(
+                    job_id=job.job_id,
+                    request_id=job.request_id,
+                    tenant_id=job.tenant_id,
+                    document_id=job.document_id,
+                    version=job.version,
+                    status="queued",
+                )
+            )
+            await runtime_publisher.publish(job)
+        except HTTPException:
+            _remove_job_directory(job_directory)
+            raise
+        except Exception as error:
+            _remove_job_directory(job_directory)
+            raise HTTPException(
+                status_code=503, detail="Não foi possível enfileirar a ingestão."
+            ) from error
+        return IngestionAcceptedResponse(job_id=str(job_id), status="queued")
+
+    @application.get(
+        "/v1/ingestion/{job_id}",
+        response_model=IngestionStatusResponse,
+        tags=["ingestion"],
+    )
+    async def ingestion_status(
+        job_id: str,
+        context: Annotated[AuthenticatedContext, Depends(authenticated_context)],
+    ) -> IngestionStatusResponse:
+        """Consulta o job sem permitir acesso ao estado de outro tenant."""
+
+        try:
+            job_status = await runtime_job_store.get(job_id)
+        except Exception as error:
+            raise HTTPException(
+                status_code=503, detail="Status de ingestão indisponível."
+            ) from error
+        if job_status is None or job_status.tenant_id != context.tenant_id:
+            raise HTTPException(status_code=404, detail="Job de ingestão não encontrado.")
+        return IngestionStatusResponse(
+            job_id=str(job_status.job_id),
+            status=job_status.status,
+            document_id=job_status.document_id,
+            version=job_status.version,
+            chunks_indexed=job_status.chunks_indexed,
+            detail=job_status.detail,
+        )
+
+    @application.post(
         "/v1/ask",
         response_model=AskResponse,
         responses={status.HTTP_503_SERVICE_UNAVAILABLE: {"model": ErrorResponse}},
@@ -311,6 +440,15 @@ def create_app(
         return response
 
     return application
+
+
+def _remove_job_directory(path: Path) -> None:
+    """Remove arquivos de um upload que não chegou a ser publicado."""
+
+    if path.exists():
+        for child in path.iterdir():
+            child.unlink()
+        path.rmdir()
 
 
 app = create_app()

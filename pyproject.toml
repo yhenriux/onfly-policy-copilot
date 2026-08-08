@@ -8,6 +8,7 @@ version = "1.0.0"
 description = "Assistente multi-tenant para consulta segura e rastreável de políticas corporativas de viagens."
 requires-python = ">=3.11,<3.15"
 dependencies = [
+    "aio-pika>=9.5,<10",
     "fastapi>=0.115,<1",
     "httpx>=0.28,<1",
     "langchain-core>=1,<2",
@@ -18,6 +19,8 @@ dependencies = [
     "llama-index-vector-stores-qdrant>=0.6,<1",
     "pydantic-settings>=2.7,<3",
     "qdrant-client>=1.15,<2",
+    "python-multipart>=0.0.20,<1",
+    "redis>=5.2,<8",
     "sentence-transformers>=5.0,<6",
     "uvicorn[standard]>=0.34,<1",
 ]

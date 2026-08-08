@@ -123,6 +123,24 @@ class ErrorResponse(BaseModel):
     detail: str
 
 
+class IngestionAcceptedResponse(BaseModel):
+    """Confirma que um job de ingestão foi colocado na fila."""
+
+    job_id: str
+    status: Literal["queued"]
+
+
+class IngestionStatusResponse(BaseModel):
+    """Estado público de um job pertencente ao tenant autenticado."""
+
+    job_id: str
+    status: Literal["queued", "processing", "completed", "skipped", "failed", "dead_lettered"]
+    document_id: str
+    version: str
+    chunks_indexed: int
+    detail: str | None = None
+
+
 class FeedbackRequest(BaseModel):
     """Avaliação simples ligada a uma resposta já entregue."""
 

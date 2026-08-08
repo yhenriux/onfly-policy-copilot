@@ -13,13 +13,51 @@ services:
       OLLAMA_BASE_URL: http://host.docker.internal:11434
       QDRANT_MODE: server
       QDRANT_URL: http://qdrant:6333
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      REDIS_URL: redis://redis:6379/0
+      INGESTION_STORAGE_PATH: /app/.local/ingestion
     ports:
       - "8000:8000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       qdrant:
-        condition: service_started
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ingestion_data:/app/.local/ingestion
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      args:
+        APP_VERSION: "1.0.0"
+        PROMPT_VERSION: "policy_answer_v1"
+    image: onfly-policy-copilot:1.0.0
+    command: ["python", "-m", "app.worker.ingestion_worker"]
+    environment:
+      APP_ENV: development
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      QDRANT_MODE: server
+      QDRANT_URL: http://qdrant:6333
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      REDIS_URL: redis://redis:6379/0
+      INGESTION_STORAGE_PATH: /app/.local/ingestion
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ingestion_data:/app/.local/ingestion
     restart: unless-stopped
 
   qdrant:
@@ -28,7 +66,39 @@ services:
       - "6333:6333"
     volumes:
       - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:6333/readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    ports:
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
     restart: unless-stopped
 
 volumes:
   qdrant_data:
+  rabbitmq_data:
+  redis_data:
+  ingestion_data:

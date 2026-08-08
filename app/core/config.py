@@ -48,6 +48,19 @@ class Settings(BaseSettings):
     qdrant_collection: str = "onfly_policy_documents_phase2"
     qdrant_api_key: SecretStr | None = None
 
+    rabbitmq_url: str = "amqp://guest:guest@localhost:5672/"
+    rabbitmq_exchange: str = "onfly.ingestion"
+    rabbitmq_queue: str = "onfly.ingestion.jobs"
+    rabbitmq_dead_letter_queue: str = "onfly.ingestion.dead-letter"
+    rabbitmq_prefetch_count: int = Field(default=1, ge=1, le=100)
+    rabbitmq_retry_attempts: int = Field(default=3, ge=1, le=10)
+    rabbitmq_retry_delay_seconds: int = Field(default=5, ge=0, le=3_600)
+
+    redis_url: str = "redis://localhost:6379/0"
+    redis_job_ttl_seconds: int = Field(default=86_400, ge=60, le=2_592_000)
+    ingestion_storage_path: Path = Path(".local/ingestion")
+    ingestion_max_file_bytes: int = Field(default=10_000_000, ge=1_024, le=100_000_000)
+
     retrieval_top_k: int = Field(default=10, ge=1, le=100)
     context_top_k: int = Field(default=10, ge=1, le=50)
     rrf_k: int = Field(default=60, ge=1, le=1_000)
