@@ -6,10 +6,11 @@ Este documento descreve como o Onfly Policy Copilot transforma políticas sinté
 
 ```mermaid
 flowchart TD
-    A["Políticas sintéticas"] --> B["Leitura e normalização"]
-    B --> C["Chunks por seção"]
+    A["Upload ou catálogo"] --> B["RabbitMQ + worker"]
+    B --> C0["Leitura e normalização"]
+    C0 --> C["Chunks por seção"]
     C --> D["Embeddings: all-minilm"]
-    D --> E["Qdrant e BM25"]
+    D --> E["Qdrant + índice lexical"]
     F["Pergunta com token autenticado"] --> G["Segurança e filtro da empresa"]
     G --> H["Busca vetorial e lexical"]
     E --> H
@@ -23,17 +24,20 @@ flowchart TD
 
 Cada empresa fictícia possui suas próprias políticas e documentos de dúvidas frequentes. O carregamento executa estas etapas:
 
-1. **Leitura:** abre arquivos Markdown e seus catálogos.
-2. **Normalização:** remove diferenças irrelevantes de espaçamento sem mudar o significado do texto.
-3. **Chunking por seção:** divide o documento em trechos menores e preserva título, seção e sobreposição configurável. *Chunk* é um trecho usado na busca.
-4. **Embeddings:** o Ollama usa `all-minilm` para criar vetores numéricos que representam o significado de cada trecho.
-5. **Indexação:** grava vetores e metadados no Qdrant e alimenta o índice BM25, usado para busca por termos.
+1. **Enfileiramento:** o endpoint salva o upload no volume compartilhado, registra `queued` no Redis e publica um job no RabbitMQ. O worker consome a mensagem e executa as etapas seguintes.
+2. **Leitura:** abre arquivos Markdown e seus catálogos.
+3. **Normalização:** remove diferenças irrelevantes de espaçamento sem mudar o significado do texto.
+4. **Chunking por seção:** divide o documento em trechos menores e preserva título, seção e sobreposição configurável. *Chunk* é um trecho usado na busca.
+5. **Embeddings:** o Ollama usa `all-minilm` para criar vetores numéricos que representam o significado de cada trecho.
+6. **Indexação:** grava vetores e metadados no Qdrant; a busca lexical usa os textos e metadados recuperados para procurar termos.
 
 Um hash identifica o conteúdo de cada documento. Assim, reenviar o mesmo arquivo não duplica seus trechos. Versões podem coexistir, mas somente a versão ativa participa da busca.
 
 ### Metadados guardados
 
-Todo trecho guarda, no mínimo, a empresa, o documento, a versão, a seção, o identificador do trecho, o período de validade e o estado ativo. Esses dados tornam a fonte verificável e permitem aplicar o isolamento entre empresas.
+Todo trecho guarda, no mínimo, a empresa, o documento, a versão, a seção, o identificador do trecho, o período de validade, `search_status` e `deletion_status`. Esses dados tornam a fonte verificável e permitem aplicar o isolamento entre empresas.
+
+Quando o job termina, o worker grava `completed` ou `skipped` no Redis. Falhas transitórias são tentadas novamente até o limite configurado; falhas que excedem o limite seguem para a dead-letter queue e ficam como `failed` no status do job.
 
 ## 2. Proteção antes da busca
 

@@ -4,8 +4,8 @@
 
 ```powershell
 ollama list
+docker compose up -d
 uv run python -m scripts.seed_demo
-uv run uvicorn app.main:app --reload
 ```
 
 Confirme `http://localhost:8000/ready`. A resposta deve informar `ollama: true` e `qdrant: true`. Abra `http://localhost:8000` e faça uma consulta de aquecimento, pois a primeira carga do CrossEncoder pode levar mais de dez segundos.
@@ -39,6 +39,7 @@ Confirme `http://localhost:8000/ready`. A resposta deve informar `ollama: true` 
 
 - Envie feedback positivo ou negativo e explique o vínculo com `request_id`.
 - Mostre o indicador de Ollama e Qdrant, `/metrics` e `/docs`.
+- Se houver tempo, carregue uma política Markdown por `POST /v1/ingestion`, mostre o `202 Accepted` e acompanhe o `job_id` em `GET /v1/ingestion/{job_id}`. Explique RabbitMQ como fila, worker como executor e Redis como estado do job.
 - Encerre com os limites conhecidos: modelo de 1B, primeira consulta mais lenta e feedback em memória.
 
 ## Plano de contingência

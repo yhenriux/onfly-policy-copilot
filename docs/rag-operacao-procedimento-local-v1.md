@@ -20,7 +20,7 @@ P95 significa que 95% das requisições devem terminar abaixo do limite. A API a
 ## Verificação rápida
 
 1. Abra `GET /health`. Se falhar, o processo da API não está acessível.
-2. Abra `GET /ready`. O corpo informa separadamente `ollama` e `qdrant`.
+2. Abra `GET /ready`. O corpo informa separadamente `ollama` e `qdrant`. RabbitMQ e Redis são dependências do fluxo de ingestão e devem ser verificados no Compose.
 3. Abra `GET /metrics`. Compare erros, retries, fallbacks, volume e latências.
 4. Copie o `X-Request-ID` da resposta ou o `request_id` do JSON.
 5. Procure esse identificador nos eventos `http_request` e `rag_trace`.
@@ -46,6 +46,22 @@ P95 significa que 95% das requisições devem terminar abaixo do limite. A API a
 - Confirme o caminho `QDRANT_PATH` e a coleção configurada.
 - Execute novamente a ingestão somente se a coleção estiver ausente.
 - Não apague a pasta local durante a investigação; ela contém o índice persistido.
+
+### Ingestão parada ou job pendente
+
+- Consulte `GET /v1/ingestion/{job_id}` e registre o `request_id`.
+- Veja `docker compose logs --tail=200 worker` e procure o `job_id`.
+- Verifique `docker compose ps rabbitmq redis worker`.
+- Consulte a fila em `http://localhost:15672` usando as credenciais locais do RabbitMQ.
+- Se houver erro transitório no Ollama ou Qdrant, corrija a dependência e aguarde os retries do worker.
+- Se o job estiver na dead-letter queue, preserve a mensagem antes de reprocessar manualmente.
+- Não apague o diretório correspondente no volume `ingestion_data` enquanto o job estiver em `queued` ou `processing`.
+
+### Redis indisponível
+
+- Confirme `docker compose exec redis redis-cli ping`.
+- O endpoint de status pode retornar `503`, mesmo que a fila esteja funcionando.
+- Não trate a ausência do status como confirmação de que o job falhou; verifique RabbitMQ e os logs do worker.
 
 ### Latência alta
 

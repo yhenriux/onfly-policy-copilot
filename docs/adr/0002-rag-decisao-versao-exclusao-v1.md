@@ -10,12 +10,12 @@ ADR significa registro de decisão arquitetural. Este documento explica uma esco
 
 Cada trecho possui dois campos de controle:
 
-- `is_active`: informa se a versão pode participar da busca.
-- `is_deleted`: informa se o documento foi excluído de forma lógica.
+- `search_status`: informa se a versão está ativa para participar da busca.
+- `deletion_status`: informa se o documento foi excluído de forma lógica.
 
-Ao ingerir uma nova versão, as anteriores recebem `is_active=false`. A nova versão recebe `is_active=true` e `is_deleted=false`.
+Ao ingerir uma nova versão, as anteriores recebem `search_status=inactive`. A nova versão recebe `search_status=active` e `deletion_status=available`.
 
-Ao excluir um documento, todas as versões recebem `is_active=false` e `is_deleted=true`.
+Ao excluir um documento, todas as versões devem receber `search_status=inactive` e `deletion_status=deleted`.
 
 ## Motivo
 

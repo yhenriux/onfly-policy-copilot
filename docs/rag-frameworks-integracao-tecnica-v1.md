@@ -20,8 +20,9 @@ O filtro da empresa continua obrigatório dentro da consulta vetorial. BM25, RRF
 
 [`app/orchestration/rag_graph.py`](../app/orchestration/rag_graph.py) cria um fluxo determinístico com dois nós:
 
-```text
-validar pergunta → responder com RAG existente
+```mermaid
+flowchart LR
+    Validate["Validar pergunta"] --> RAG["Responder com RAG existente"]
 ```
 
 O grafo não cria um agente autônomo e não executa ferramentas externas. Ele torna o fluxo explícito e prepara o projeto para checkpoints e aprovação humana quando houver ações sensíveis no futuro. `WORKFLOW_ENGINE=langgraph` é o padrão; `service` preserva o caminho anterior para comparação.

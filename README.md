@@ -10,6 +10,8 @@ O projeto usa somente dados sintéticos e não representa um produto oficial da 
 - base de conhecimento com 50 documentos curtos sobre dúvidas comuns de viagem;
 - isolamento de documentos por empresa, também chamada de tenant;
 - ingestão versionada e sem duplicação;
+- ingestão assíncrona por upload, RabbitMQ e worker;
+- status de jobs persistido no Redis;
 - busca vetorial com Qdrant e busca por palavras com BM25;
 - combinação dos rankings com RRF e reordenação com CrossEncoder;
 - geração local com `llama3.2:1b` pelo Ollama;
@@ -20,22 +22,25 @@ O projeto usa somente dados sintéticos e não representa um produto oficial da 
 
 ## Arquitetura resumida
 
-```text
-Navegador
-   │ login e pergunta
-   ▼
-FastAPI ── autenticação e guardrails
-   │
-   ├── Ollama all-minilm ── embedding da pergunta
-   │
-   ├── Qdrant + BM25 ── busca filtrada por tenant
-   │
-   ├── RRF + CrossEncoder ── ranking e contexto
-   │
-   └── Ollama llama3.2:1b ── resposta estruturada
-             │
-             ▼
-     resposta + fontes + trace
+```mermaid
+flowchart LR
+    Browser["Navegador"] --> API["FastAPI"]
+    API --> Auth["Autenticação e guardrails"]
+    Auth --> Ask["Consulta RAG"]
+    Ask --> EmbedQ["Ollama: all-minilm"]
+    Ask --> Search["Qdrant + BM25"]
+    Search --> Rank["RRF + CrossEncoder"]
+    Rank --> Generate["Ollama: llama3.2:1b"]
+    Generate --> Response["Resposta + fontes + trace"]
+    API --> Upload["Upload de política"]
+    Upload --> Storage["Volume compartilhado"]
+    Upload --> Redis["Redis: status do job"]
+    Upload --> Rabbit["RabbitMQ"]
+    Rabbit --> Worker["Worker de ingestão"]
+    Worker --> Storage
+    Worker --> EmbedD["Ollama: embeddings"]
+    Worker --> Qdrant["Qdrant: indexação"]
+    Worker --> Redis
 ```
 
 RAG significa geração apoiada por recuperação: o modelo recebe trechos encontrados nas políticas em vez de responder apenas com conhecimento próprio.
@@ -44,22 +49,21 @@ RAG significa geração apoiada por recuperação: o modelo recebe trechos encon
 
 O pipeline abaixo explica o caminho completo entre uma política e uma resposta. Os nomes técnicos aparecem acompanhados de uma explicação simples.
 
-```text
-Documentos de políticas
-        ↓
-Leitura, normalização e divisão por seção
-        ↓
-Embeddings com all-minilm
-        ↓
-Qdrant + índice BM25
-        ↓
-Pergunta autenticada e filtro obrigatório por empresa
-        ↓
-Busca híbrida → RRF → CrossEncoder
-        ↓
-Contexto sem repetições e com tamanho controlado
-        ↓
-Resposta fundamentada, fontes e confiança
+```mermaid
+flowchart TD
+    Upload["Upload autenticado"] --> File["Volume compartilhado"]
+    File --> Queue["RabbitMQ: job"]
+    Queue --> Worker["Worker"]
+    Worker --> Load["Leitura e normalização"]
+    Load --> Chunk["Divisão por seção"]
+    Chunk --> Embed["Embeddings: all-minilm"]
+    Embed --> Index["Qdrant + metadados"]
+    Index --> Ready["Documento pesquisável"]
+    Question["Pergunta autenticada"] --> Retrieval["Busca híbrida"]
+    Ready --> Retrieval
+    Retrieval --> RRF["RRF + CrossEncoder"]
+    RRF --> Context["Contexto controlado"]
+    Context --> Answer["Resposta fundamentada"]
 ```
 
 1. Os documentos sintéticos de cada empresa são lidos, normalizados e divididos em trechos menores. A divisão preserva títulos e seções para manter o sentido da regra.
@@ -71,6 +75,7 @@ Resposta fundamentada, fontes e confiança
 7. O sistema remove trechos repetidos e limita o tamanho do contexto. Assim, o modelo recebe evidências suficientes sem uma quantidade desnecessária de texto.
 8. Para as perguntas frequentes de bagagem, hotel, reembolso e transporte por aplicativo, a aplicação monta uma resposta clara a partir das fontes recuperadas. Nas demais perguntas, o `llama3.2:1b` gera uma resposta estruturada usando somente o contexto autorizado.
 9. A API devolve a resposta, as fontes usadas, a confiança e um `request_id`, que é o identificador da requisição. Quando não há evidência suficiente, ela informa isso em vez de inventar uma política.
+10. A ingestão HTTP retorna `202 Accepted` depois de salvar o upload e publicar um job. O worker executa embeddings e indexação fora do processo da API; o status fica disponível por `GET /v1/ingestion/{job_id}`.
 
 Leia a descrição completa em [Pipeline RAG](docs/rag-pipeline-explicacao-local-v1.md).
 
@@ -87,8 +92,10 @@ Leia a descrição completa em [Pipeline RAG](docs/rag-pipeline-explicacao-local
 | LangGraph | orquestração determinística das etapas da consulta |
 | LangSmith | tracing opcional, avaliação e observação protegida |
 | LlamaIndex | representação dos documentos e adaptador do Qdrant |
+| RabbitMQ | fila durável, retries e dead-letter de ingestão |
+| Redis | status temporário dos jobs com TTL |
 | pytest, Ruff e mypy | testes, qualidade e verificação de tipos |
-| Docker Compose | API e Qdrant reproduzíveis |
+| Docker Compose | API, worker, RabbitMQ, Redis e Qdrant reproduzíveis |
 
 Os quatro frameworks complementam o código próprio do projeto; regras de segurança, isolamento por empresa, busca híbrida, RRF e re-ranking continuam sob controle da aplicação. Veja [Integração de frameworks](docs/rag-frameworks-integracao-tecnica-v1.md) para responsabilidades, configuração e limites.
 
@@ -130,7 +137,7 @@ As credenciais são públicas porque pertencem somente ao conjunto sintético. O
 
 ## Executar com Docker
 
-O Compose inicia a API e o Qdrant. O Ollama continua no computador e é acessado pelo endereço `host.docker.internal`.
+O Compose inicia a API, o worker, RabbitMQ, Redis e Qdrant. API e worker compartilham o volume de uploads. O Ollama continua no computador e é acessado pelo endereço `host.docker.internal`.
 
 ```powershell
 docker compose build
@@ -155,6 +162,8 @@ O volume do Qdrant é preservado. Use `docker compose down --volumes` somente qu
 | `GET` | `/ready` | verifica Ollama e Qdrant |
 | `POST` | `/v1/auth/login` | cria a sessão fictícia |
 | `POST` | `/v1/ask` | consulta políticas autorizadas |
+| `POST` | `/v1/ingestion` | recebe uma política e enfileira a ingestão (`202`) |
+| `GET` | `/v1/ingestion/{job_id}` | consulta o status da ingestão do tenant |
 | `POST` | `/v1/feedback` | registra avaliação da resposta |
 | `GET` | `/metrics` | apresenta métricas operacionais |
 | `GET` | `/docs` | documentação interativa Swagger |
@@ -194,9 +203,11 @@ app/
 ├── generation/      provedor Ollama, prompt e fallback
 ├── guardrails/      proteção da pergunta, fonte e tenant
 ├── ingestion/       leitura, normalização, chunks e indexação
+├── messaging/       contratos, RabbitMQ e estado Redis dos jobs
 ├── observability/   health, readiness, métricas e trace
 ├── retrieval/       Qdrant, BM25, RRF, contexto e re-ranking
 ├── web/             interface demonstrativa
+├── worker/          consumidor assíncrono de ingestão
 └── main.py          ponto de entrada da API
 data/
 ├── auth/            usuários sintéticos
@@ -230,4 +241,6 @@ tests/               testes unitários, integrados e de segurança
 - O modelo de 1B pode recusar uma resposta mesmo quando o retrieval encontrou uma fonte forte. Nesse caso, o sistema mostra a fonte em modo degradado sem inventar conteúdo.
 - A primeira consulta carrega o CrossEncoder e pode ser mais lenta.
 - Feedback e métricas operacionais ficam em memória e são apagados ao reiniciar a API.
+- RabbitMQ e Redis são dependências do fluxo assíncrono de ingestão; `/ready` atualmente reporta apenas Ollama e Qdrant, portanto a disponibilidade desses componentes deve ser verificada no Compose e nos logs do worker.
+- O volume compartilhado é adequado ao Compose local, mas deve ser substituído por object storage em uma implantação com múltiplos hosts.
 - Revogação de token, rate limiting e monitoramento externo não fazem parte desta demonstração local.

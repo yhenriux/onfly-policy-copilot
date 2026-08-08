@@ -74,6 +74,7 @@ Os ADRs mantêm a numeração cronológica para preservar o histórico. Após o 
 | `0007-rag-decisao-avaliacao-regressao-v1.md` | golden dataset e gate de regressão |
 | `0008-rag-decisao-observabilidade-local-v1.md` | logs, métricas e readiness |
 | `0009-rag-decisao-interface-feedback-v1.md` | front-end e feedback por requisição |
+| `0010-rag-decisao-ingestao-assincrona-v1.md` | RabbitMQ, Redis e worker de ingestão |
 
 ## Arquivos preservados por estabilidade técnica
 

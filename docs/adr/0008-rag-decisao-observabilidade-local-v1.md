@@ -8,7 +8,7 @@ Uma resposta precisa ser investigável sem guardar pergunta, token ou dados pess
 
 Cada requisição recebe um `request_id`, reutiliza um valor enviado em `X-Request-ID` e o devolve no mesmo cabeçalho. Logs estruturados em JSON e o trace da resposta registram tempos, modelo, prompt, documentos, scores, retries e fallback.
 
-`/health` informa somente que a API está viva. `/ready` verifica Ollama e Qdrant separadamente. `/metrics` expõe contadores e médias mantidos no processo.
+`/health` informa somente que a API está viva. `/ready` verifica Ollama e Qdrant separadamente. RabbitMQ e Redis são dependências do fluxo de ingestão e são verificados pelo healthcheck do Compose e pelo runbook, mas ainda não fazem parte da resposta de `/ready`. `/metrics` expõe contadores e médias mantidos no processo da API.
 
 ## Consequências
 
@@ -16,3 +16,4 @@ Cada requisição recebe um `request_id`, reutiliza um valor enviado em `X-Reque
 - Perguntas e credenciais não entram nos logs.
 - As métricas em memória reiniciam junto com o processo e ainda não calculam percentis.
 - Uma plataforma de monitoramento futura poderá consumir os mesmos nomes de eventos e métricas.
+- Jobs assíncronos usam `job_id` junto de `request_id`; o estado operacional do job fica no Redis e os detalhes de consumo ficam nos logs do worker.

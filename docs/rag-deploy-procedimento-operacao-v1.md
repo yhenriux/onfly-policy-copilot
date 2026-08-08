@@ -11,7 +11,16 @@ Este procedimento usa imagens identificadas por versão. Rollback significa volt
 5. Carregue os dados com `docker compose exec api python -m scripts.seed_demo`.
 6. Confirme `http://localhost:8000/health` e `http://localhost:8000/ready`.
 
-O container acessa o Ollama do computador por `host.docker.internal:11434`. O Qdrant roda no Compose e guarda o índice no volume `qdrant_data`.
+O Compose inicia `api`, `worker`, `rabbitmq`, `redis` e `qdrant`. API e worker montam o volume `ingestion_data`; RabbitMQ e Redis possuem volumes próprios. Os containers acessam o Ollama do computador por `host.docker.internal:11434`. O Qdrant guarda o índice no volume `qdrant_data`.
+
+Verifique também:
+
+```powershell
+docker compose ps
+docker compose logs --tail=100 worker
+docker compose exec rabbitmq rabbitmq-diagnostics -q ping
+docker compose exec redis redis-cli ping
+```
 
 ## Critério para promover uma versão
 
@@ -19,15 +28,18 @@ O container acessa o Ollama do computador por `host.docker.internal:11434`. O Qd
 - A imagem possui os labels da aplicação e do prompt.
 - `/health` e `/ready` retornam HTTP 200.
 - Login e uma pergunta sintética funcionam para cada tenant.
+- Um upload Markdown autenticado retorna `202` e o worker conclui o job.
+- `GET /v1/ingestion/{job_id}` retorna `completed` ou `skipped` para o tenant correto.
 - O gate de regressão e os testes de segurança passaram.
 
 ## Rollback
 
 1. Preserve logs, `request_id`, versão da aplicação e versão do prompt.
 2. Troque a tag da imagem no Compose para a última versão aprovada.
-3. Execute `docker compose up -d --no-deps api`.
-4. Confirme `/health`, `/ready`, login e pergunta sintética.
-5. Se a falha envolver o índice, siga o procedimento de migração e altere o alias para a coleção anterior.
+3. Execute `docker compose up -d --no-deps api worker`.
+4. Confirme `/health`, `/ready`, login, pergunta sintética e o consumo da fila.
+5. Se a falha envolver a ingestão, preserve mensagens da DLQ e os estados no Redis antes de reiniciar o worker.
+6. Se a falha envolver o índice, siga o procedimento de migração e altere o alias para a coleção anterior.
 
 Nunca apague a imagem ou a coleção anterior antes do fim da janela de observação.
 

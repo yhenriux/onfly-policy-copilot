@@ -9,10 +9,14 @@ RAG significa *Retrieval-Augmented Generation*: a aplicação recupera evidênci
 | Etapa | Onde está no código | Por que existe |
 |---|---|---|
 | Carregar documentos | [`scripts/seed_demo.py`](../scripts/seed_demo.py) e [`app/ingestion/loaders.py`](../app/ingestion/loaders.py) | Lê políticas e catálogos de dúvidas das duas empresas sintéticas. |
+| Receber ingestão | [`app/main.py`](../app/main.py) | Recebe o Markdown, grava o manifesto no volume compartilhado e retorna `202 Accepted`. |
+| Publicar job | [`app/messaging/rabbitmq.py`](../app/messaging/rabbitmq.py) e [`app/messaging/schemas.py`](../app/messaging/schemas.py) | Declara a fila durável e publica o contrato versionado do job. |
+| Processar job | [`app/worker/ingestion_worker.py`](../app/worker/ingestion_worker.py) | Consome jobs, executa o pipeline e aplica retry/DLQ. |
+| Consultar status | [`app/messaging/redis_store.py`](../app/messaging/redis_store.py) e [`app/main.py`](../app/main.py) | Persiste estados com TTL e protege a consulta pelo tenant. |
 | Normalizar e dividir | [`app/ingestion/normalizer.py`](../app/ingestion/normalizer.py) e [`app/ingestion/chunker.py`](../app/ingestion/chunker.py#L89) | Prepara trechos consistentes, com seção e contexto. |
 | Gerar embeddings | [`app/ingestion/embeddings.py`](../app/ingestion/embeddings.py#L15) e [`app/generation/ollama_provider.py`](../app/generation/ollama_provider.py#L103) | Permite buscar por significado, e não apenas por palavras idênticas. |
-| Indexar no Qdrant | [`app/ingestion/pipeline.py`](../app/ingestion/pipeline.py) e [`app/retrieval/dense.py`](../app/retrieval/dense.py#L84) | Persiste vetores e metadados com versão, empresa e estado ativo. |
-| Buscar por significado | [`app/retrieval/dense.py`](../app/retrieval/dense.py#L153) | Recupera vetores próximos, filtrados pela empresa autorizada. |
+| Indexar no Qdrant | [`app/ingestion/pipeline.py`](../app/ingestion/pipeline.py) e [`app/retrieval/dense.py`](../app/retrieval/dense.py#L141) | Persiste vetores e metadados com versão, empresa e estado de busca. |
+| Buscar por significado | [`app/retrieval/dense.py`](../app/retrieval/dense.py#L188) | Recupera vetores próximos, filtrados pela empresa autorizada. |
 | Buscar por palavras | [`app/retrieval/lexical.py`](../app/retrieval/lexical.py#L63) | Complementa a busca vetorial quando termos específicos são importantes. |
 | Combinar resultados | [`app/retrieval/hybrid.py`](../app/retrieval/hybrid.py#L28) e [`app/retrieval/fusion.py`](../app/retrieval/fusion.py#L8) | Usa os dois sinais de busca sem depender de somente um deles. |
 | Reordenar por relevância | [`app/retrieval/reranker.py`](../app/retrieval/reranker.py#L31) | Compara pergunta e trecho diretamente para priorizar a melhor evidência. |
@@ -73,9 +77,9 @@ Na pergunta, [`AskService.ask`](../app/generation/service.py#L75) usa o mesmo pr
 
 [`index_chunks`](../app/ingestion/indexer.py#L7) cria a coleção quando necessário, desativa versões anteriores do mesmo documento e grava a versão atual.
 
-O método [`QdrantVectorStore.upsert`](../app/retrieval/dense.py#L84) persiste cada vetor junto com metadados: `tenant_id`, `document_id`, título, versão, validade, seção, texto, hashes, `is_active` e `is_deleted`.
+O método [`QdrantVectorStore.upsert`](../app/retrieval/dense.py#L141) persiste cada vetor junto com metadados: `tenant_id`, `policy_document_id`, título, versão, validade, seção, texto, hashes, `search_status` e `deletion_status`.
 
-Na busca, [`QdrantVectorStore.search`](../app/retrieval/dense.py#L153) exige um `tenant_id` e aplica três filtros ao mesmo tempo:
+Na busca, [`QdrantVectorStore.search`](../app/retrieval/dense.py#L188) exige um `tenant_id` e aplica filtros de tenant, documento, `search_status` e `deletion_status`.
 
 - empresa autorizada;
 - versão ativa;
@@ -173,7 +177,7 @@ O alinhamento do projeto não depende apenas de uma frase no prompt. Ele combina
 
 O isolamento também é uma proteção de segurança. [`MockAuthService`](../app/core/auth.py#L30) assina um token que contém a empresa autorizada. A composição em [`_build_ask_service`](../app/main.py#L49) aplica [`TenantGuardedRetriever`](../app/guardrails/tenant_guardrail.py#L20) ao mecanismo de busca.
 
-Esse guardrail exige a empresa antes da busca e confere cada trecho retornado depois dela. Em paralelo, o Qdrant filtra `tenant_id`, `is_active` e `is_deleted` em [`QdrantVectorStore.search`](../app/retrieval/dense.py#L153).
+Esse guardrail exige a empresa antes da busca e confere cada trecho retornado depois dela. Em paralelo, o Qdrant filtra `tenant_id`, `search_status` e `deletion_status` em [`QdrantVectorStore.search`](../app/retrieval/dense.py#L188).
 
 **Por que funciona:** o navegador não escolhe a empresa no corpo da pergunta, a busca não acontece sem empresa autenticada e um resultado de outra empresa interrompe o fluxo. O teste [`test_post_retrieval_validation_blocks_cross_tenant_payload`](../tests/security/test_tenant_isolation.py#L44) valida exatamente esse cenário.
 
@@ -232,11 +236,11 @@ O endereço padrão é `http://localhost:11434`, configurado em [`.env.example`]
 - Qdrant em disco local ou em um serviço Qdrant privado;
 - rede interna entre API, Ollama e Qdrant, sem expor o endpoint do modelo à internet pública.
 
-Para Qdrant remoto, o projeto já oferece `QDRANT_MODE=server`, `QDRANT_URL` e `QDRANT_API_KEY`. A chave deve ficar apenas no `.env` ou no cofre de segredos do ambiente, nunca no repositório.
+Para Qdrant remoto, o projeto já oferece `QDRANT_MODE=server`, `QDRANT_URL` e `QDRANT_API_KEY`. A chave deve ficar apenas no `.env` ou no cofre de segredos do ambiente, nunca no repositório. Para a ingestão assíncrona, `RABBITMQ_URL`, `REDIS_URL` e `INGESTION_STORAGE_PATH` cumprem o mesmo papel de configuração externa.
 
 ### Caminho para uma execução hospedada em nuvem
 
-O repositório **não integra atualmente** OpenAI, Anthropic, Gemini, Bedrock, Vertex AI ou Azure OpenAI. A arquitetura, porém, foi preparada para essa troca por meio de `GenerationProvider`.
+O repositório **não integra atualmente** OpenAI, Anthropic, Gemini, Bedrock, Vertex AI ou Azure OpenAI. A arquitetura, porém, foi preparada para essa troca por meio de `GenerationProvider`. RabbitMQ e Redis não substituem o provedor de IA: coordenam o processamento assíncrono e o estado da ingestão.
 
 Para adicionar um provedor em nuvem, o passo responsável seria:
 
