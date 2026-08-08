@@ -77,7 +77,6 @@ class LocalReadinessChecker:
     def _local_collection_is_persisted(self) -> bool:
         """Confirma no disco que a coleção local esperada já foi criada."""
 
-        return (
-            (self._qdrant_path / "meta.json").is_file()
-            and (self._qdrant_path / "collection" / self._collection).is_dir()
-        )
+        return (self._qdrant_path / "meta.json").is_file() and (
+            self._qdrant_path / "collection" / self._collection
+        ).is_dir()

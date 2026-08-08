@@ -99,7 +99,7 @@ class QdrantVectorStore:
         return models.Filter(
             must=[
                 _field_condition("tenant_id", tenant_id),
-                    _field_condition("policy_document_id", document_id),
+                _field_condition("policy_document_id", document_id),
             ]
         )
 
@@ -147,24 +147,24 @@ class QdrantVectorStore:
         nodes: list[BaseNode] = []
         for chunk, embedding in zip(chunks, embeddings, strict=True):
             metadata = {
-                    "tenant_id": chunk.tenant_id,
-                    "policy_document_id": chunk.document_id,
-                    "title": chunk.title,
-                    "version": chunk.version,
-                    "valid_from": chunk.valid_from.isoformat(),
-                    "valid_until": (
-                        chunk.valid_until.isoformat() if chunk.valid_until is not None else None
-                    ),
-                    "source": chunk.source,
-                    "chunk_id": chunk.chunk_id,
-                    "position": chunk.position,
-                    "section": chunk.section,
-                    "policy_text": chunk.text,
-                    "document_hash": chunk.document_hash,
-                    "chunk_hash": chunk.chunk_hash,
-                    "search_status": "active",
-                    "deletion_status": "available",
-                }
+                "tenant_id": chunk.tenant_id,
+                "policy_document_id": chunk.document_id,
+                "title": chunk.title,
+                "version": chunk.version,
+                "valid_from": chunk.valid_from.isoformat(),
+                "valid_until": (
+                    chunk.valid_until.isoformat() if chunk.valid_until is not None else None
+                ),
+                "source": chunk.source,
+                "chunk_id": chunk.chunk_id,
+                "position": chunk.position,
+                "section": chunk.section,
+                "policy_text": chunk.text,
+                "document_hash": chunk.document_hash,
+                "chunk_hash": chunk.chunk_hash,
+                "search_status": "active",
+                "deletion_status": "available",
+            }
             document = Document(text=chunk.text, metadata=metadata)
             nodes.append(
                 TextNode(

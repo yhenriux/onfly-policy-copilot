@@ -1,9 +1,13 @@
 """Testes da leitura de disponibilidade das dependências locais."""
 
+from pathlib import Path
+
 from app.observability.health import LocalReadinessChecker
 
 
-def test_local_qdrant_lock_is_ready_when_expected_collection_is_persisted(tmp_path) -> None:
+def test_local_qdrant_lock_is_ready_when_expected_collection_is_persisted(
+    tmp_path: Path,
+) -> None:
     """Evita falso alerta quando a própria API mantém o Qdrant local aberto."""
 
     collection = "politicas"
