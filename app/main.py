@@ -2,6 +2,8 @@
 
 import json
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
 from time import perf_counter
@@ -161,12 +163,17 @@ def create_app(
         else None
     )
 
-    @application.on_event("shutdown")
-    async def close_runtime_clients() -> None:
-        """Fecha clientes externos criados pela API durante testes e shutdown."""
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        """Fecha clientes externos criados pela API durante shutdown."""
 
-        if runtime_graph is not None:
-            await runtime_graph.close()
+        try:
+            yield
+        finally:
+            if runtime_graph is not None:
+                await runtime_graph.close()
+
+    application.router.lifespan_context = lifespan
 
     web_root = runtime_settings.web_root
     application.mount("/static", StaticFiles(directory=web_root / "static"), name="static")
