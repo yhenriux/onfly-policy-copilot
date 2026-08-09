@@ -68,6 +68,8 @@ services:
         condition: service_healthy
     volumes:
       - ingestion_data:/app/.local/ingestion
+    healthcheck:
+      disable: true
     restart: unless-stopped
 
   qdrant:

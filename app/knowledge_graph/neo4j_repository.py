@@ -62,7 +62,7 @@ class Neo4jKnowledgeGraph:
     async def _write_document(tx: Any, document: KnowledgeGraphDocument) -> None:
         await tx.run(
             """
-            MATCH (tenant:Tenant {id: $tenant_id})
+            MERGE (tenant:Tenant {id: $tenant_id})
             MERGE (policy:Policy {id: $policy_id})
             SET policy.tenant_id = $tenant_id, policy.document_id = $document_id,
                 policy.title = $title
@@ -85,6 +85,7 @@ class Neo4jKnowledgeGraph:
             version=document.version,
             valid_from=document.valid_from,
             valid_until=document.valid_until,
+            extractor_version=document.extractor_version,
         )
         for fact in document.facts:
             await tx.run(

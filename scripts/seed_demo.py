@@ -5,9 +5,12 @@ from pathlib import Path
 
 from app.core.config import get_settings
 from app.generation.ollama_provider import OllamaProvider
-from app.ingestion.chunker import ChunkingConfig
+from app.ingestion.chunker import ChunkingConfig, chunk_by_section
 from app.ingestion.loaders import load_catalog, load_manifest
+from app.ingestion.normalizer import normalize_document
 from app.ingestion.pipeline import ingest_document
+from app.knowledge_graph.extractor import extract_document_graph
+from app.knowledge_graph.neo4j_repository import Neo4jKnowledgeGraph
 from app.retrieval.factory import build_vector_store
 
 
@@ -27,6 +30,16 @@ async def seed_demo() -> list[str]:
         timeout_seconds=settings.ollama_timeout_seconds,
     )
     vector_store = build_vector_store(settings)
+    graph_store = (
+        Neo4jKnowledgeGraph(
+            settings.neo4j_uri,
+            settings.neo4j_username,
+            settings.neo4j_password.get_secret_value(),
+            settings.neo4j_database,
+        )
+        if settings.knowledge_graph_enabled
+        else None
+    )
     chunking_config = ChunkingConfig(
         max_chars=settings.chunk_max_chars,
         overlap_chars=settings.chunk_overlap_chars,
@@ -44,6 +57,12 @@ async def seed_demo() -> list[str]:
                 vector_store=vector_store,
                 chunking_config=chunking_config,
             )
+            if graph_store is not None:
+                normalized = normalize_document(document)
+                await graph_store.ensure_constraints()
+                await graph_store.upsert_document(
+                    extract_document_graph(chunk_by_section(normalized, chunking_config))
+                )
             messages.append(
                 f"{result.tenant_id}:{result.version}: {result.status} "
                 f"({result.chunks_indexed} trechos)"
@@ -52,6 +71,8 @@ async def seed_demo() -> list[str]:
     finally:
         await provider.close()
         vector_store.close()
+        if graph_store is not None:
+            await graph_store.close()
 
 
 if __name__ == "__main__":
