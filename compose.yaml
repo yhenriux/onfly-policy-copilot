@@ -108,7 +108,7 @@ services:
     restart: unless-stopped
 
   neo4j:
-    image: neo4j:5.28-community
+    image: neo4j:5.26-community
     environment:
       NEO4J_AUTH: neo4j/local-compose-password-change-me
     ports:
