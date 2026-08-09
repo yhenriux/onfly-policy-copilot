@@ -5,6 +5,8 @@ import re
 from app.domain.models import DocumentChunk
 from app.knowledge_graph.models import KnowledgeGraphDocument, KnowledgeGraphFact
 
+EXTRACTOR_VERSION = "rules_v2"
+
 _AMOUNT_PATTERN = re.compile(
     r"R\$\s*([0-9]{1,3}(?:\.[0-9]{3})*(?:[.,][0-9]{1,2})?|[0-9]+(?:[.,][0-9]{1,2})?)",
     re.IGNORECASE,
@@ -83,5 +85,6 @@ def extract_document_graph(chunks: list[DocumentChunk]) -> KnowledgeGraphDocumen
         version=first.version,
         valid_from=first.valid_from.isoformat(),
         valid_until=first.valid_until.isoformat() if first.valid_until else None,
+        extractor_version=EXTRACTOR_VERSION,
         facts=facts,
     )

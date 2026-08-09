@@ -30,4 +30,5 @@ class KnowledgeGraphDocument:
     version: str
     valid_from: str
     valid_until: str | None
+    extractor_version: str
     facts: tuple[KnowledgeGraphFact, ...]

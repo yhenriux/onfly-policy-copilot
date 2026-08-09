@@ -23,6 +23,10 @@ class Neo4jKnowledgeGraph:
             await session.run(
                 "CREATE CONSTRAINT policy_rule_id IF NOT EXISTS FOR (n:Rule) REQUIRE n.id IS UNIQUE"
             )
+            await session.run(
+                "CREATE CONSTRAINT policy_version_id IF NOT EXISTS "
+                "FOR (n:PolicyVersion) REQUIRE n.id IS UNIQUE"
+            )
 
     async def upsert_document(self, document: KnowledgeGraphDocument) -> None:
         async with self._driver.session(database=self._database) as session:
@@ -37,9 +41,11 @@ class Neo4jKnowledgeGraph:
             result = await session.run(
                 """
                 MATCH (tenant:Tenant {id: $tenant_id})-[:OWNS]->
-                    (policy:Policy)-[:DEFINES]->(rule:Rule)
-                WHERE policy.active = true AND rule.active = true
-                  AND policy.tenant_id = $tenant_id AND rule.tenant_id = $tenant_id
+                    (policy:Policy)-[:HAS_VERSION]->(version:PolicyVersion)
+                    -[:DEFINES]->(rule:Rule)
+                WHERE version.active = true AND rule.active = true
+                  AND policy.tenant_id = $tenant_id AND version.tenant_id = $tenant_id
+                  AND rule.tenant_id = $tenant_id
                   AND toLower(rule.topic) CONTAINS toLower($topic)
                 RETURN rule.statement AS statement, rule.amount AS amount,
                        rule.currency AS currency, rule.conditions AS conditions,
@@ -56,19 +62,25 @@ class Neo4jKnowledgeGraph:
     async def _write_document(tx: Any, document: KnowledgeGraphDocument) -> None:
         await tx.run(
             """
-            OPTIONAL MATCH (old:Policy {tenant_id: $tenant_id, document_id: $document_id})
-            SET old.active = false
-            MERGE (tenant:Tenant {id: $tenant_id})
+            MATCH (tenant:Tenant {id: $tenant_id})
             MERGE (policy:Policy {id: $policy_id})
             SET policy.tenant_id = $tenant_id, policy.document_id = $document_id,
-                policy.title = $title,
-                policy.version = $version, policy.valid_from = $valid_from,
-                policy.valid_until = $valid_until, policy.active = true
+                policy.title = $title
             MERGE (tenant)-[:OWNS]->(policy)
+            WITH policy
+            OPTIONAL MATCH (policy)-[:HAS_VERSION]->(old:PolicyVersion)
+            SET old.active = false
+            MERGE (version:PolicyVersion {id: $version_id})
+            SET version.tenant_id = $tenant_id, version.document_id = $document_id,
+                version.version = $version, version.valid_from = $valid_from,
+                version.valid_until = $valid_until, version.active = true,
+                version.extractor_version = $extractor_version
+            MERGE (policy)-[:HAS_VERSION]->(version)
             """,
             tenant_id=document.tenant_id,
             document_id=document.document_id,
-            policy_id=f"{document.tenant_id}:{document.document_id}:{document.version}",
+            policy_id=f"{document.tenant_id}:{document.document_id}",
+            version_id=f"{document.tenant_id}:{document.document_id}:{document.version}",
             title=document.title,
             version=document.version,
             valid_from=document.valid_from,
@@ -77,18 +89,26 @@ class Neo4jKnowledgeGraph:
         for fact in document.facts:
             await tx.run(
                 """
-                MATCH (policy:Policy {id: $policy_id})
+                MATCH (version:PolicyVersion {id: $version_id})
                 MERGE (rule:Rule {id: $rule_id})
                 SET rule.tenant_id = $tenant_id, rule.topic = $topic,
                     rule.statement = $statement, rule.amount = $amount,
                     rule.currency = $currency, rule.conditions = $conditions,
-                    rule.exceptions = $exceptions, rule.active = true
-                MERGE (policy)-[:DEFINES]->(rule)
+                    rule.active = true, rule.extractor_version = $extractor_version
+                MERGE (version)-[:DEFINES]->(rule)
+                MERGE (topic:Topic {id: $topic})
+                MERGE (rule)-[:ABOUT]->(topic)
+                FOREACH (condition IN $conditions |
+                    MERGE (node:Condition {id: condition})
+                    MERGE (rule)-[:HAS_CONDITION]->(node))
+                FOREACH (exception IN $exceptions |
+                    MERGE (node:Exception {id: exception})
+                    MERGE (rule)-[:HAS_EXCEPTION]->(node))
                 MERGE (evidence:Chunk {id: $chunk_id})
                 SET evidence.tenant_id = $tenant_id, evidence.section = $section
                 MERGE (rule)-[:SUPPORTED_BY]->(evidence)
                 """,
-                policy_id=f"{document.tenant_id}:{document.document_id}:{document.version}",
+                version_id=f"{document.tenant_id}:{document.document_id}:{document.version}",
                 rule_id=f"{fact.tenant_id}:{fact.document_id}:{fact.version}:{fact.chunk_id}",
                 tenant_id=fact.tenant_id,
                 topic=fact.topic,
@@ -97,6 +117,7 @@ class Neo4jKnowledgeGraph:
                 currency=fact.currency,
                 conditions=list(fact.conditions),
                 exceptions=list(fact.exceptions),
+                extractor_version=document.extractor_version,
                 chunk_id=fact.chunk_id,
                 section=fact.section,
             )

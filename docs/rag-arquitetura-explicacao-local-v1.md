@@ -89,14 +89,16 @@ O volume compartilhado é uma decisão de simplicidade para o ambiente local. Em
 
 ## Grafo de conhecimento
 
-O Neo4j é opcional fora do Compose. Quando `KNOWLEDGE_GRAPH_ENABLED=true`, o worker extrai fatos simples e auditáveis dos chunks, como tema, valor, condição, exceção e evidência de origem. Cada fato é vinculado ao tenant, à política e ao chunk original.
+O Neo4j é opcional fora do Compose. Quando `KNOWLEDGE_GRAPH_ENABLED=true`, o worker extrai fatos simples e auditáveis dos chunks, como tema, valor, condição, exceção e evidência de origem. Cada fato é vinculado ao tenant, à política, à versão e ao chunk original.
 
 ```mermaid
 graph LR
     Tenant["Tenant"] --> Policy["Policy"]
-    Policy --> Rule["Rule"]
+    Policy --> Version["PolicyVersion"]
+    Version --> Rule["Rule"]
     Rule --> Condition["Condition"]
     Rule --> Exception["Exception"]
+    Rule --> Topic["Topic"]
     Rule --> Evidence["Chunk"]
 ```
 
