@@ -140,7 +140,7 @@ As credenciais são públicas porque pertencem somente ao conjunto sintético. O
 
 ## Executar com Docker
 
-O Compose inicia a API, o worker, RabbitMQ, Redis e Qdrant. API e worker compartilham o volume de uploads. O Ollama continua no computador e é acessado pelo endereço `host.docker.internal`.
+O Compose inicia a API, o worker, RabbitMQ, Redis e Qdrant. API e worker compartilham o volume de uploads. O Ollama continua no computador e é acessado pelo endereço `host.docker.internal`. Por padrão, a API fica em `http://localhost:8010`; use `APP_PUBLISHED_PORT=8000` se essa porta estiver livre.
 O Compose também inicia o Neo4j e habilita a construção do grafo no worker; o modo local fora do Compose mantém `KNOWLEDGE_GRAPH_ENABLED=false` por padrão.
 
 ```powershell
