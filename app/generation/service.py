@@ -21,11 +21,7 @@ from app.domain.schemas import (
     GenerationMetadata,
     SourceReference,
 )
-from app.generation.grounded_answers import (
-    GROUNDED_ANSWER_VERSION,
-    build_grounded_answer,
-    rewrite_frequent_question,
-)
+from app.generation.grounded_answers import rewrite_frequent_question
 from app.generation.provider import GenerationProvider, ProviderResult
 from app.guardrails.input_guardrail import ensure_safe_question
 from app.guardrails.output_guardrail import keep_safe_document_chunks
@@ -100,24 +96,6 @@ class AskService:
         if any(chunk.tenant_id != context.tenant_id for chunk in chunks):
             raise TenantIsolationError("O serviço recebeu dados de outro tenant")
         chunks = keep_safe_document_chunks(chunks)
-        grounded_chunks = [chunk for chunk in chunks if chunk.score >= self._evidence_min_score]
-        grounded = build_grounded_answer(request.question, grounded_chunks)
-        if grounded is not None:
-            response = AskResponse(
-                answer=grounded.answer,
-                sources=[_source(chunk) for chunk in grounded.chunks],
-                confidence="high",
-                request_id=current_trace().request_id,
-                latency_ms=_elapsed_ms(started_at),
-                generation=GenerationMetadata(
-                    provider="grounded-synthesizer",
-                    model=GROUNDED_ANSWER_VERSION,
-                    prompt_version=GROUNDED_ANSWER_VERSION,
-                    status="generated",
-                    attempts=0,
-                ),
-            )
-            return self._finalize(response, chunks, context)
         evidence_chunks = [chunk for chunk in chunks if chunk.score >= self._evidence_min_score][
             : self._max_evidence_chunks
         ]
@@ -149,12 +127,10 @@ class AskService:
         """Aceita somente fontes que realmente estavam no contexto autorizado."""
 
         if not result.output.evidence_found:
-            # O retrieval já validou que existe evidência acima do limite mínimo.
-            # Se o modelo pequeno não conseguir usá-la, mostramos a fonte sem inventar.
+            # Sem uma saída generativa válida, mostramos a evidência sem inventar interpretação.
             return self._degraded_response(chunks[0], started_at, attempts=result.attempts)
         if result.output.confidence == "low":
-            # Modelos pequenos podem produzir uma conclusão curta e errada mesmo com a fonte certa.
-            # Nesse caso, a aplicação mostra o texto autorizado em vez de confiar na interpretação.
+            # Confiança baixa não deve ser apresentada como orientação conclusiva.
             return self._degraded_response(chunks[0], started_at, attempts=result.attempts)
         if any(position > len(chunks) for position in result.output.cited_source_positions):
             raise InvalidGenerationOutputError("A geração citou uma posição não autorizada")
@@ -193,7 +169,11 @@ class AskService:
         """Evita inventar uma resposta quando a geração não está disponível."""
 
         return AskResponse(
-            answer=f"Esta é a orientação encontrada na política:\n\n{chunk.text}",
+            answer=(
+                "Encontrei uma regra relacionada, mas não consegui interpretá-la com segurança. "
+                "Confira o trecho abaixo ou confirme com a equipe responsável:\n\n"
+                f"{chunk.text}"
+            ),
             sources=[_source(chunk)],
             confidence="low",
             request_id=current_trace().request_id,

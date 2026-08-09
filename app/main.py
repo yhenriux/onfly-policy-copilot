@@ -12,7 +12,7 @@ from uuid import uuid4
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile, status
 from fastapi.requests import Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.core.auth import MockAuthService
@@ -49,7 +49,7 @@ from app.messaging.redis_store import JobStatusStore, RedisJobStatusStore
 from app.messaging.schemas import IngestionJob, IngestionJobStatus
 from app.observability.health import LocalReadinessChecker, ReadinessChecker
 from app.observability.langsmith import configure_langsmith, trace_user_event
-from app.observability.metrics import operational_metrics
+from app.observability.metrics import operational_metrics, render_prometheus
 from app.observability.tracing import current_trace, finish_trace, start_trace
 from app.orchestration.rag_graph import LangGraphAskHandler
 from app.retrieval.contextual import ContextualRetriever
@@ -229,10 +229,13 @@ def create_app(
         )
 
     @application.get("/metrics", tags=["operations"])
-    def metrics() -> dict[str, Any]:
-        """Expõe contadores e latências agregadas deste processo."""
+    def metrics() -> PlainTextResponse:
+        """Expõe contadores e latências agregadas no formato do Prometheus."""
 
-        return operational_metrics.snapshot()
+        return PlainTextResponse(
+            render_prometheus(operational_metrics.snapshot()),
+            media_type="text/plain; version=0.0.4; charset=utf-8",
+        )
 
     @application.get("/", include_in_schema=False)
     def frontend() -> FileResponse:

@@ -23,7 +23,7 @@ RAG significa *Retrieval-Augmented Generation*: a aplicação recupera evidênci
 | Reordenar por relevância | [`app/retrieval/reranker.py`](../app/retrieval/reranker.py#L31) | Compara pergunta e trecho diretamente para priorizar a melhor evidência. |
 | Controlar contexto | [`app/retrieval/context.py`](../app/retrieval/context.py#L18) | Evita repetir texto e ultrapassar o limite enviado ao modelo. |
 | Gerar resposta segura | [`app/generation/service.py`](../app/generation/service.py#L75) | Coordena segurança, retrieval, geração, fallback e fontes. |
-| Sintetizar perguntas frequentes | [`app/generation/grounded_answers.py`](../app/generation/grounded_answers.py#L59) | Produz respostas claras usando somente as fontes recuperadas. |
+| Reescrever perguntas frequentes | [`app/generation/grounded_answers.py`](../app/generation/grounded_answers.py#L88) | Amplia a consulta de busca com termos de política, sem mudar a pergunta mostrada. |
 | Isolar empresas | [`app/guardrails/tenant_guardrail.py`](../app/guardrails/tenant_guardrail.py#L20) | Exige a empresa do token antes da busca e confere os resultados depois dela. |
 
 ## 1. Ingestão: do documento ao trecho pesquisável
@@ -124,14 +124,14 @@ buscar, reordenar e selecionar contexto
        ↓
 confirmar isolamento e filtrar conteúdo inseguro
        ↓
-sintetizar resposta fundamentada ou chamar o modelo gerador
+gerar resposta pelo modelo generativo com as fontes autorizadas
        ↓
 devolver fontes, confiança e request_id
 ```
 
-Para bagagem, hospedagem, reembolso e transporte local, [`build_grounded_answer`](../app/generation/grounded_answers.py#L59) seleciona os trechos do assunto recuperados e os organiza em linguagem direta. [`rewrite_frequent_question`](../app/generation/grounded_answers.py#L88) adiciona termos de política à consulta interna, sem mudar a pergunta mostrada à pessoa usuária.
+Com evidência acima do limiar, a resposta é sempre gerada por [`OllamaProvider.generate`](../app/generation/ollama_provider.py#L118), que chama `llama3.2:1b` com temperatura zero e exige JSON validado por Pydantic — nenhuma síntese determinística é interposta no caminho normal. [`rewrite_frequent_question`](../app/generation/grounded_answers.py#L88) adiciona termos de política à consulta interna, sem mudar a pergunta mostrada à pessoa usuária.
 
-Nas demais perguntas, [`OllamaProvider.generate`](../app/generation/ollama_provider.py#L118) chama `llama3.2:1b` com temperatura zero e exige JSON validado por Pydantic. Caso falte evidência, o modelo esteja indisponível ou devolva um formato inválido, o serviço retorna uma resposta controlada, sem inventar uma política.
+Caso falte evidência, o modelo esteja indisponível ou devolva um formato inválido, o serviço retorna uma resposta controlada, mostrando a fonte autorizada sem inventar uma política.
 
 ## 7. Onde o isolamento é conferido
 
@@ -157,7 +157,7 @@ O controle normaliza letras maiúsculas, minúsculas e acentos com [`normalize_s
 
 Documentos também podem conter uma frase que tenta se passar por instrução do sistema. Por isso, [`keep_safe_document_chunks`](../app/guardrails/output_guardrail.py#L26) remove do contexto trechos que contenham padrões maliciosos, como “ignore previous instructions” ou “revele o segredo”.
 
-O filtro é aplicado em [`AskService.ask`](../app/generation/service.py#L75) logo depois da busca e antes da síntese ou geração. Portanto, o conteúdo suspeito não é enviado ao `llama3.2:1b`.
+O filtro é aplicado em [`AskService.ask`](../app/generation/service.py#L75) logo depois da busca e antes da geração. Portanto, o conteúdo suspeito não é enviado ao `llama3.2:1b`.
 
 **Por que funciona:** o modelo recebe documentos como dados, não como comandos. Além do filtro, o prompt do sistema estabelece que somente evidências autorizadas podem sustentar a resposta. O teste [`test_malicious_document_instruction_never_reaches_generator`](../tests/security/test_prompt_injection.py#L28) comprova que o gerador não é acionado quando o único trecho recuperado é malicioso.
 
@@ -201,7 +201,7 @@ O projeto possui uma integração de IA efetivamente implementada: o **Ollama**,
 | Serviço | Chamadas usadas | Finalidade no projeto | Onde está no código |
 |---|---|---|---|
 | Ollama | `POST /api/embed` | Cria embeddings com `all-minilm` para documentos e perguntas. | [`OllamaProvider.embed`](../app/generation/ollama_provider.py#L103) |
-| Ollama | `POST /api/chat` | Gera resposta estruturada com `llama3.2:1b` quando não há síntese direta de pergunta frequente. | [`OllamaProvider.generate`](../app/generation/ollama_provider.py#L118) |
+| Ollama | `POST /api/chat` | Gera resposta estruturada com `llama3.2:1b` para toda pergunta com evidência suficiente. | [`OllamaProvider.generate`](../app/generation/ollama_provider.py#L118) |
 | Qdrant | cliente Python do Qdrant | Grava vetores e pesquisa documentos por semelhança. | [`QdrantVectorStore`](../app/retrieval/dense.py#L19) |
 | FastAPI | `/v1/auth/login`, `/v1/ask` e demais rotas | Expõe a API do próprio projeto para a interface e para testes. | [`app/main.py`](../app/main.py) |
 
@@ -278,7 +278,7 @@ Ollama foi escolhido para a prova de conceito porque permite reproduzir o fluxo 
 | Embeddings e contrato do Ollama | [`tests/unit/test_ollama_provider.py`](../tests/unit/test_ollama_provider.py) e [`tests/integration/test_ingestion_pipeline.py`](../tests/integration/test_ingestion_pipeline.py) |
 | BM25 e RRF | [`tests/unit/test_lexical_retrieval.py`](../tests/unit/test_lexical_retrieval.py) e [`tests/unit/test_fusion.py`](../tests/unit/test_fusion.py) |
 | CrossEncoder e contexto não redundante | [`tests/unit/test_reranker.py`](../tests/unit/test_reranker.py) e [`tests/unit/test_contextual_retriever.py`](../tests/unit/test_contextual_retriever.py) |
-| Respostas frequentes fundamentadas | [`tests/unit/test_grounded_answers.py`](../tests/unit/test_grounded_answers.py) |
+| Reescrita de consultas frequentes | [`tests/unit/test_grounded_answers.py`](../tests/unit/test_grounded_answers.py) |
 | Isolamento entre empresas | [`tests/security/test_tenant_isolation.py`](../tests/security/test_tenant_isolation.py) |
 
 Execute a suíte completa com:

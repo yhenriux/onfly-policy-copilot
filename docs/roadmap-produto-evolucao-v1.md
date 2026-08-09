@@ -11,7 +11,7 @@
 - Reprocessamento idempotente do grafo após `skipped` no Qdrant.
 - Lifecycle de clientes externos via `lifespan` do FastAPI.
 - Prompt versionado em `v2` no código, release, Dockerfile e Compose.
-- Respostas grounded condicionadas a evidência acima do limiar configurado.
+- Respostas sempre generativas quando há evidência acima do limiar; fallback controlado mostra a fonte autorizada.
 - Correção de inicialização e clipboard defensivo no frontend.
 
 ## Próxima fase: piloto seguro

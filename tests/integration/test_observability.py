@@ -15,6 +15,16 @@ class _Readiness:
         return self._result
 
 
+def _parse_prometheus(text: str) -> dict[str, float]:
+    metrics: dict[str, float] = {}
+    for line in text.splitlines():
+        if not line or line.startswith("#"):
+            continue
+        name, value = line.split(" ")
+        metrics[name] = float(value)
+    return metrics
+
+
 async def test_request_id_is_reused_and_metrics_count_requests() -> None:
     operational_metrics.reset()
     app = create_app(
@@ -27,8 +37,10 @@ async def test_request_id_is_reused_and_metrics_count_requests() -> None:
         metrics = await client.get("/metrics")
 
     assert health.headers["X-Request-ID"] == "req_external_123"
-    assert metrics.json()["counters"]["requests_total"] >= 2
-    assert metrics.json()["latencies"]["http_total"]["count"] >= 1
+    assert metrics.headers["content-type"].startswith("text/plain")
+    parsed = _parse_prometheus(metrics.text)
+    assert parsed["requests_total"] >= 2
+    assert parsed["http_total_ms_count"] >= 1
 
 
 async def test_readiness_reports_each_dependency() -> None:

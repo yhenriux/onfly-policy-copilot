@@ -249,7 +249,7 @@ function renderResponse(data) {
   if (data.generation.status === "no_evidence" || !(data.sources || []).length) {
     showState("info", "Não encontramos essa informação", "Tente dar mais detalhes ou procure a equipe responsável por viagens da sua empresa.");
   } else if (data.generation.status === "degraded") {
-    showState("warning", "Mostramos a orientação original", "Para evitar uma interpretação imprecisa, exibimos o texto encontrado diretamente no documento da empresa.");
+    showState("warning", "Precisa de uma confirmação", "Encontramos uma regra relacionada, mas o assistente não conseguiu interpretá-la com segurança. Confira a fonte ou fale com a equipe responsável.");
   }
   elements.responseCard.scrollIntoView({ behavior: "smooth", block: "start" });
 }

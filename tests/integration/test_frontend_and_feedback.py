@@ -104,7 +104,7 @@ async def test_authenticated_interface_event_is_counted_without_conversation_con
         metrics = await client.get("/metrics")
 
     assert response.status_code == 204
-    assert metrics.json()["counters"]["user_event_quick_question_selected_total"] == 1
+    assert "user_event_quick_question_selected_total 1" in metrics.text
 
 
 async def test_feedback_cannot_cross_tenants_or_use_unknown_request() -> None:

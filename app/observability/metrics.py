@@ -1,5 +1,6 @@
 """Métricas operacionais simples mantidas na memória do processo."""
 
+import re
 from collections import defaultdict
 from threading import Lock
 from typing import Any
@@ -68,6 +69,46 @@ class OperationalMetrics:
             self._latency_count.clear()
             self._value_sum.clear()
             self._value_count.clear()
+
+
+def _prometheus_safe_name(name: str) -> str:
+    """Torna o nome compatível com o formato de exposição do Prometheus."""
+
+    return re.sub(r"[^a-zA-Z0-9_:]", "_", name)
+
+
+def render_prometheus(snapshot: dict[str, Any]) -> str:
+    """Serializa a fotografia das métricas no formato texto do Prometheus."""
+
+    lines: list[str] = []
+    for name, value in sorted(snapshot["counters"].items()):
+        metric = _prometheus_safe_name(name)
+        lines.append(f"# HELP {metric} Total de ocorrências no processo.")
+        lines.append(f"# TYPE {metric} counter")
+        lines.append(f"{metric} {int(value)}")
+    for name, data in sorted(snapshot["latencies"].items()):
+        metric = _prometheus_safe_name(name)
+        lines.append(f"# HELP {metric}_ms_total Tempo acumulado em milissegundos.")
+        lines.append(f"# TYPE {metric}_ms_total counter")
+        lines.append(f"{metric}_ms_total {round(data['average_ms'] * data['count'], 3)}")
+        lines.append(f"# HELP {metric}_ms_count Quantidade de medições.")
+        lines.append(f"# TYPE {metric}_ms_count counter")
+        lines.append(f"{metric}_ms_count {int(data['count'])}")
+        lines.append(f"# HELP {metric}_ms_average Latência média em milissegundos.")
+        lines.append(f"# TYPE {metric}_ms_average gauge")
+        lines.append(f"{metric}_ms_average {data['average_ms']}")
+    for name, data in sorted(snapshot["indicators"].items()):
+        metric = _prometheus_safe_name(name)
+        lines.append(f"# HELP {metric}_total Somatório do indicador.")
+        lines.append(f"# TYPE {metric}_total counter")
+        lines.append(f"{metric}_total {data['total']}")
+        lines.append(f"# HELP {metric} Média do indicador.")
+        lines.append(f"# TYPE {metric} gauge")
+        lines.append(f"{metric} {data['average']}")
+        lines.append(f"# HELP {metric}_count Quantidade de medições do indicador.")
+        lines.append(f"# TYPE {metric}_count counter")
+        lines.append(f"{metric}_count {int(data['count'])}")
+    return "\n".join(lines) + "\n"
 
 
 operational_metrics = OperationalMetrics()

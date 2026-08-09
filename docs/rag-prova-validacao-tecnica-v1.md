@@ -23,7 +23,7 @@ Políticas corporativas costumam estar distribuídas em documentos longos e pode
 | Isolamento de dados | A empresa vem do token autenticado; a busca só considera seus documentos. |
 | Recuperação com evidências | A aplicação encontra trechos relevantes antes de responder. |
 | Resposta rastreável | A resposta devolve fontes, confiança e identificador da requisição. |
-| Respostas frequentes claras | Bagagem, hospedagem, reembolso e transporte por aplicativo recebem síntese baseada nas fontes recuperadas. |
+| Respostas sempre generativas | Com evidência suficiente, toda resposta é gerada pelo modelo com as fontes autorizadas; fallback mostra a fonte sem inventar política. |
 | Segurança básica | Tentativas conhecidas de alterar as instruções do assistente são bloqueadas ou sinalizadas. |
 | Confiabilidade | Timeout, tentativa controlada, fallback, health check, readiness e logs estruturados fazem parte do fluxo. |
 

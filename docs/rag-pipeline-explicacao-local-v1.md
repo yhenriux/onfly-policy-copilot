@@ -58,9 +58,7 @@ Depois do re-ranking, a aplicação remove trechos muito parecidos e respeita um
 
 ## 4. Geração da resposta
 
-As perguntas frequentes sobre bagagem, hospedagem, reembolso e transporte por aplicativo recebem uma síntese direta das fontes recuperadas. Isso melhora a clareza e evita que uma regra importante fique escondida em um trecho isolado.
-
-Para as demais perguntas, o `llama3.2:1b`, executado localmente pelo Ollama, recebe apenas o contexto permitido e devolve uma resposta estruturada. A resposta é validada antes de chegar à interface.
+Quando há evidência acima do limiar, o `llama3.2:1b`, executado localmente pelo Ollama, recebe apenas o contexto permitido e devolve uma resposta estruturada. A resposta é validada antes de chegar à interface, e nenhuma síntese determinística é interposta no caminho normal.
 
 Se a evidência for insuficiente, a aplicação informa que não encontrou suporte na base. Ela não deve completar uma regra com conhecimento externo ou inventado.
 
