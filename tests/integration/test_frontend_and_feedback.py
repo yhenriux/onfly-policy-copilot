@@ -59,6 +59,26 @@ async def test_frontend_and_static_assets_are_served() -> None:
     assert "--primary" in styles.text
 
 
+async def test_metrics_dashboard_and_assets_are_served() -> None:
+    transport = httpx.ASGITransport(app=create_app(Settings(app_env="test")))
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        page = await client.get("/metrics/ui")
+        script = await client.get("/static/metrics.js")
+        styles = await client.get("/static/metrics.css")
+        raw = await client.get("/metrics")
+
+    assert page.status_code == 200
+    assert "Métricas operacionais" in page.text
+    assert "metrics.js" in page.text
+    assert script.status_code == 200
+    assert "parseMetrics" in script.text
+    assert styles.status_code == 200
+    assert "kpi-card" in styles.text
+    assert raw.status_code == 200
+    assert raw.headers["content-type"].startswith("text/plain")
+
+
 async def test_feedback_is_linked_to_authenticated_request() -> None:
     store = InMemoryFeedbackStore()
     application = create_app(

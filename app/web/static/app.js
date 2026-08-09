@@ -420,7 +420,7 @@ if (API_BASE_URL) {
   const swaggerLink = document.querySelector("#swagger-link");
   if (swaggerLink) swaggerLink.href = `${API_BASE_URL}/docs`;
   const metricsLink = document.querySelector("#metrics-link");
-  if (metricsLink) metricsLink.href = `${API_BASE_URL}/metrics`;
+  if (metricsLink) metricsLink.href = `${API_BASE_URL}/metrics/ui`;
 }
 checkOperations();
 window.setInterval(checkOperations, 30000);

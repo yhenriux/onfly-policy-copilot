@@ -237,6 +237,12 @@ def create_app(
             media_type="text/plain; version=0.0.4; charset=utf-8",
         )
 
+    @application.get("/metrics/ui", include_in_schema=False)
+    def metrics_ui() -> FileResponse:
+        """Entrega o painel de visualização das métricas do processo."""
+
+        return FileResponse(web_root / "metrics.html")
+
     @application.get("/", include_in_schema=False)
     def frontend() -> FileResponse:
         """Entrega a interface demonstrativa junto com a API."""

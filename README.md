@@ -202,7 +202,8 @@ O volume do Qdrant é preservado. Use `docker compose down --volumes` somente qu
 | `GET` | `/v1/ingestion/{job_id}` | consulta o status da ingestão do tenant |
 | `GET` | `/v1/knowledge-graph/rules?topic=...` | consulta regras explícitas do tenant quando Neo4j está habilitado |
 | `POST` | `/v1/feedback` | registra avaliação da resposta |
-| `GET` | `/metrics` | apresenta métricas operacionais |
+| `GET` | `/metrics` | apresenta métricas operacionais no formato do Prometheus |
+| `GET` | `/metrics/ui` | painel de visualização das métricas operacionais |
 | `GET` | `/docs` | documentação interativa Swagger |
 
 O corpo de `/v1/ask` aceita somente a pergunta. O tenant vem exclusivamente do token autenticado.

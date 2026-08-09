@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Painel de métricas operacionais do assistente de políticas corporativas da Onfly." />
+    <title>Métricas · Onfly Policy Copilot</title>
+    <script>
+      // O painel depende da API. Abrir o arquivo redireciona para o endereço correto.
+      if (window.location.protocol === "file:") window.location.replace("http://localhost:8000/metrics/ui");
+    </script>
+    <link rel="stylesheet" href="./static/styles.css" />
+    <link rel="stylesheet" href="./static/metrics.css" />
+    <script src="./static/metrics.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Ir para o conteúdo</a>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Onfly Policy Copilot">
+        <span class="onfly-logo">onfly<span class="logo-globe" aria-hidden="true">◎</span></span>
+        <span class="brand-divider" aria-hidden="true"></span>
+        <span class="product-name">Painel de métricas <small>observabilidade em tempo real</small></span>
+      </a>
+      <div class="topbar-actions">
+        <div class="system-status" id="live-status" aria-live="polite">
+          <span class="status-dot checking"></span><span>Conectando...</span>
+        </div>
+        <a class="header-link" href="/" rel="noreferrer">Assistente</a>
+        <a class="header-link" href="./metrics" target="_blank" rel="noreferrer">Prometheus</a>
+        <button class="outline-button" id="refresh-button" type="button">Atualizar</button>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <section class="dashboard" aria-label="Métricas operacionais">
+        <div class="dash-heading">
+          <div>
+            <span class="eyebrow"><span aria-hidden="true">◉</span> Observabilidade do processo</span>
+            <h1>Métricas operacionais</h1>
+            <p>Resumo em memória do processo atual da API. Contadores, médias e distribuições desde o último reinício.</p>
+          </div>
+          <div class="dash-meta">
+            <span id="last-updated">aguardando... </span>
+            <span id="refresh-interval">atualização automática a cada 5 s</span>
+          </div>
+        </div>
+
+        <div class="dash-error hidden" id="dash-error" role="alert"></div>
+
+        <div class="kpi-grid" id="kpi-grid" aria-label="Indicadores principais"></div>
+
+        <div class="panel-row">
+          <section class="panel" aria-labelledby="latency-title">
+            <div class="panel-head">
+              <div><h2 id="latency-title">Latência média</h2><span>milissegundos por etapa, desde o último reinício</span></div>
+              <span class="technical-tag">ms</span>
+            </div>
+            <div class="latency-list" id="latency-list"></div>
+          </section>
+
+          <section class="panel" aria-labelledby="quality-title">
+            <div class="panel-head">
+              <div><h2 id="quality-title">Qualidade das respostas</h2><span>distribuição por status e confiança</span></div>
+              <span class="technical-tag">auditável</span>
+            </div>
+            <div class="quality-grid">
+              <div class="quality-block"><h3>Status</h3><div id="status-bars"></div></div>
+              <div class="quality-block"><h3>Confiança</h3><div id="confidence-bars"></div></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel" aria-labelledby="indicators-title">
+          <div class="panel-head">
+            <div><h2 id="indicators-title">Indicadores de recuperação</h2><span>médias por pergunta respondida</span></div>
+          </div>
+          <div class="indicator-grid" id="indicator-grid"></div>
+        </section>
+
+        <section class="panel" aria-labelledby="events-title">
+          <div class="panel-head">
+            <div><h2 id="events-title">Eventos da interface</h2><span>interações contadas via telemetria</span></div>
+          </div>
+          <div class="event-grid" id="event-grid"></div>
+        </section>
+      </section>
+    </main>
+    <footer>
+      <span><strong>onfly</strong> · Métricas de demonstração mantidas na memória do processo</span>
+      <nav><a href="https://github.com/yhenriux/onfly-policy-copilot" target="_blank" rel="noreferrer">Código do projeto</a></nav>
+    </footer>
+  </body>
+</html>
