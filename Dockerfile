@@ -3,7 +3,7 @@ FROM ghcr.io/astral-sh/uv:0.8.15 AS uv_source
 FROM python:3.12.11-slim-bookworm AS runtime
 
 ARG APP_VERSION=1.0.0
-ARG PROMPT_VERSION=policy_answer_v1
+ARG PROMPT_VERSION=policy_answer_v2
 
 LABEL org.opencontainers.image.title="Onfly Policy Copilot" \
       org.opencontainers.image.version="${APP_VERSION}" \

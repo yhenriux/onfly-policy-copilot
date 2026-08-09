@@ -240,6 +240,7 @@ tests/               testes unitários, integrados e de segurança
 - [Deploy e rollback](docs/rag-deploy-procedimento-operacao-v1.md)
 - [Migração segura do índice](docs/rag-indice-migracao-operacao-v1.md)
 - [Roteiro de demonstração](docs/rag-demonstracao-roteiro-avaliacao-v1.md)
+- [Roadmap de produto e evolução](docs/roadmap-produto-evolucao-v1.md)
 
 ## Limitações conhecidas
 

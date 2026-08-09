@@ -105,6 +105,44 @@ async def test_service_returns_only_sources_cited_by_structured_output() -> None
     )
 
 
+async def test_grounded_answer_requires_evidence_above_minimum_score() -> None:
+    low_score = _chunk()
+    low_score = RetrievedChunk(
+        tenant_id=low_score.tenant_id,
+        document_id="bagagem",
+        title=low_score.title,
+        version=low_score.version,
+        valid_from=low_score.valid_from,
+        valid_until=low_score.valid_until,
+        source=low_score.source,
+        chunk_id=low_score.chunk_id,
+        position=low_score.position,
+        section="Bagagem",
+        text=low_score.text,
+        document_hash=low_score.document_hash,
+        chunk_hash=low_score.chunk_hash,
+        score=0.2,
+    )
+    provider = _Provider(
+        GenerationOutput(
+            answer="Não encontrei uma regra aplicável.",
+            cited_source_positions=[],
+            confidence="low",
+        )
+    )
+    service = AskService(
+        provider=provider,
+        retriever=_Retriever([low_score]),
+        retrieval_limit=5,
+        evidence_min_score=0.5,
+    )
+
+    response = await service.ask(AskRequest(question="Qual é a regra de bagagem?"), _context())
+
+    assert response.generation.status == "no_evidence"
+    assert provider.generation_calls == 0
+
+
 async def test_service_log_contains_configuration_but_not_question(
     caplog: pytest.LogCaptureFixture,
 ) -> None:

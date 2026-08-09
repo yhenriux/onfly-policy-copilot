@@ -365,9 +365,34 @@ def create_app(
             )
             await runtime_publisher.publish(job)
         except HTTPException:
+            await runtime_job_store.set(
+                IngestionJobStatus(
+                    job_id=job_id,
+                    request_id=current_trace().request_id,
+                    tenant_id=context.tenant_id,
+                    document_id=document_id,
+                    version=version,
+                    status="failed",
+                    detail="Upload rejeitado antes da publicação do job.",
+                )
+            )
             _remove_job_directory(job_directory)
             raise
         except Exception as error:
+            try:
+                await runtime_job_store.set(
+                    IngestionJobStatus(
+                        job_id=job_id,
+                        request_id=current_trace().request_id,
+                        tenant_id=context.tenant_id,
+                        document_id=document_id,
+                        version=version,
+                        status="failed",
+                        detail="Falha ao publicar o job de ingestão.",
+                    )
+                )
+            except Exception:
+                logger.exception("Falha ao registrar o estado failed da ingestão")
             _remove_job_directory(job_directory)
             raise HTTPException(
                 status_code=503, detail="Não foi possível enfileirar a ingestão."

@@ -100,7 +100,8 @@ class AskService:
         if any(chunk.tenant_id != context.tenant_id for chunk in chunks):
             raise TenantIsolationError("O serviço recebeu dados de outro tenant")
         chunks = keep_safe_document_chunks(chunks)
-        grounded = build_grounded_answer(request.question, chunks)
+        grounded_chunks = [chunk for chunk in chunks if chunk.score >= self._evidence_min_score]
+        grounded = build_grounded_answer(request.question, grounded_chunks)
         if grounded is not None:
             response = AskResponse(
                 answer=grounded.answer,

@@ -403,16 +403,24 @@ elements.askForm.addEventListener("submit", askQuestion);
 elements.question.addEventListener("input", updateCharacterCount);
 elements.feedbackRow.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => sendFeedback(button.dataset.rating)));
 elements.copyRequest.addEventListener("click", async () => {
-  await navigator.clipboard.writeText(state.requestId || "");
-  trackInteraction("request_id_copied");
-  elements.copyRequest.textContent = "Copiado";
-  window.setTimeout(() => { elements.copyRequest.textContent = "Copiar"; }, 1200);
+  try {
+    await navigator.clipboard.writeText(state.requestId || "");
+    trackInteraction("request_id_copied");
+    elements.copyRequest.textContent = "Copiado";
+    window.setTimeout(() => { elements.copyRequest.textContent = "Copiar"; }, 1200);
+  } catch (error) {
+    console.error("Falha ao copiar request_id", error);
+    elements.copyRequest.textContent = "Não foi possível copiar";
+    window.setTimeout(() => { elements.copyRequest.textContent = "Copiar"; }, 1600);
+  }
 });
 
 buildExamples();
 if (API_BASE_URL) {
-  document.querySelector("#swagger-link").href = `${API_BASE_URL}/docs`;
-  document.querySelector("#metrics-link").href = `${API_BASE_URL}/metrics`;
+  const swaggerLink = document.querySelector("#swagger-link");
+  if (swaggerLink) swaggerLink.href = `${API_BASE_URL}/docs`;
+  const metricsLink = document.querySelector("#metrics-link");
+  if (metricsLink) metricsLink.href = `${API_BASE_URL}/metrics`;
 }
 checkOperations();
 window.setInterval(checkOperations, 30000);
