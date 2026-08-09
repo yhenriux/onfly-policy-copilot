@@ -23,5 +23,15 @@
 {"document_id":"brisa_cartao_corporativo","title":"Uso do cartão corporativo","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"cartao-corporativo.md"},
 {"document_id":"brisa_comprovantes","title":"Comprovantes aceitos","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"comprovantes.md"},
 {"document_id":"brisa_reembolso","title":"Como pedir reembolso","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"reembolso.md"},
-{"document_id":"brisa_emergencia","title":"Ajuda durante uma emergência","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"emergencia.md"}
+{"document_id":"brisa_emergencia","title":"Ajuda durante uma emergência","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"emergencia.md"},
+{"document_id":"brisa_regras_passagem","title":"Regras avançadas de passagem aérea","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"regras-passagem.md"},
+{"document_id":"brisa_regras_hospedagem","title":"Regras avançadas de hospedagem","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"regras-hospedagem.md"},
+{"document_id":"brisa_regras_alimentacao","title":"Regras avançadas de alimentação","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"regras-alimentacao.md"},
+{"document_id":"brisa_regras_transporte","title":"Regras avançadas de transporte","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"regras-transporte.md"},
+{"document_id":"brisa_regras_reembolso","title":"Regras avançadas de reembolso","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"regras-reembolso.md"},
+{"document_id":"brisa_regras_cartao","title":"Regras do cartão corporativo","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"regras-cartao.md"},
+{"document_id":"brisa_regras_internacional","title":"Regras de viagem internacional","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"regras-internacional.md"},
+{"document_id":"brisa_regras_aprovacao","title":"Regras de aprovação e governança","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"regras-aprovacao.md"},
+{"document_id":"brisa_regras_cancelamento","title":"Regras de cancelamento e alterações","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"regras-cancelamento.md"},
+{"document_id":"brisa_regras_seguranca","title":"Regras de segurança e incidentes","version":"v1","valid_from":"2026-07-01","valid_until":null,"file":"regras-seguranca.md"}
 ]}

@@ -7,7 +7,8 @@ O projeto usa somente dados sintéticos e não representa um produto oficial da 
 ## O que a solução demonstra
 
 - autenticação com duas identidades fictícias;
-- base de conhecimento com 50 documentos curtos sobre dúvidas comuns de viagem;
+- base de conhecimento com 70 documentos catalogados sobre dúvidas comuns de viagem;
+- expansão temática cobrindo passagens, hospedagem, alimentação, transporte, reembolso, cartão, viagens internacionais, aprovação, cancelamento e segurança;
 - isolamento de documentos por empresa, também chamada de tenant;
 - ingestão versionada e sem duplicação;
 - ingestão assíncrona por upload, RabbitMQ e worker;

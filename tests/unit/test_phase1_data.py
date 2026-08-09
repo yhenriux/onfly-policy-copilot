@@ -70,18 +70,18 @@ def test_question_catalog_covers_all_planned_categories() -> None:
     assert len({case.case_id for case in catalog.cases}) == len(catalog.cases)
 
 
-def test_knowledge_base_has_50_organized_documents() -> None:
+def test_knowledge_base_has_70_organized_documents() -> None:
     catalogs = sorted((_project_root() / "data" / "tenants").glob("*/knowledge/catalog.json"))
     documents = [document for catalog in catalogs for document in load_catalog(catalog)]
 
     assert len(catalogs) == 2
-    assert len(documents) == 50
+    assert len(documents) == 70
     assert {document.tenant_id for document in documents} == {
         "aurora_tecnologia",
         "brisa_sistemas",
     }
-    assert all(document.text.startswith("# ") for document in documents)
-    assert len({(document.tenant_id, document.document_id) for document in documents}) == 50
+    assert all(document.text.startswith(("# ", "## ")) for document in documents)
+    assert len({(document.tenant_id, document.document_id) for document in documents}) == 70
 
 
 def test_same_question_has_conflicting_expected_answers() -> None:

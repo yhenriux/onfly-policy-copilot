@@ -2,6 +2,8 @@
 
 ## Entregue nesta iteração
 
+- Expansão da base sintética para 70 documentos catalogados, cobrindo os 10 domínios prioritários.
+- Reindexação local validada com 250 pontos no Qdrant e 188 chunks no Neo4j.
 - Ingestão assíncrona com RabbitMQ, worker, retries e DLQ.
 - Status de jobs no Redis.
 - Grafo Neo4j com `PolicyVersion`, tópicos, condições, exceções e evidências.
