@@ -62,11 +62,14 @@ Consulte [Pipeline RAG](rag-pipeline-explicacao-local-v1.md) para a descrição 
 Esta prova de conceito é considerada bem-sucedida quando:
 
 - a API, o Qdrant e o Ollama estão disponíveis localmente;
+- no cenário Docker, API, worker, RabbitMQ, Redis e Neo4j aparecem ativos em `docker compose ps`;
 - uma pergunta válida retorna resposta e pelo menos uma fonte autorizada quando há evidência;
 - a mesma pergunta retorna regras distintas para as duas empresas fictícias, quando aplicável;
 - nenhuma consulta da Aurora recupera conteúdo da Brisa, ou o contrário;
 - perguntas suspeitas e falhas do provedor retornam respostas HTTP controladas;
 - testes automatizados cobrem os fluxos principais de recuperação, segurança e geração.
+
+Os comandos reproduzíveis estão no [README](../README.md#testes-e-qualidade), e o estado operacional está descrito no [runbook](rag-operacao-procedimento-local-v1.md#verificação-rápida).
 
 ## O que esta prova de conceito não pretende demonstrar
 

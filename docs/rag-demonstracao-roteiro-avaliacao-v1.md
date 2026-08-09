@@ -4,11 +4,12 @@
 
 ```powershell
 ollama list
+docker compose build
 docker compose up -d
-uv run python -m scripts.seed_demo
+docker compose exec api python -m scripts.seed_demo
 ```
 
-Confirme `http://localhost:8000/ready`. A resposta deve informar `ollama: true` e `qdrant: true`. Abra `http://localhost:8000` e faça uma consulta de aquecimento, pois a primeira carga do CrossEncoder pode levar mais de dez segundos.
+Confirme `http://localhost:8010/ready`. A resposta deve informar `ollama: true` e `qdrant: true`. Abra `http://localhost:8010` e faça uma consulta de aquecimento, pois a primeira carga do CrossEncoder pode levar mais de dez segundos. RabbitMQ, Redis, Neo4j e worker devem aparecer como ativos em `docker compose ps`.
 
 ## 0:00–0:45 — Problema e login
 

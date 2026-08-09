@@ -9,9 +9,11 @@ Este procedimento usa imagens identificadas por versão. Rollback significa volt
 3. Execute `docker compose build`.
 4. Execute `docker compose up -d`.
 5. Carregue os dados com `docker compose exec api python -m scripts.seed_demo`.
-6. Confirme `http://localhost:8000/health` e `http://localhost:8000/ready`.
+6. Confirme `http://localhost:8010/health` e `http://localhost:8010/ready`.
 
-O Compose inicia `api`, `worker`, `rabbitmq`, `redis` e `qdrant`. API e worker montam o volume `ingestion_data`; RabbitMQ e Redis possuem volumes próprios. Os containers acessam o Ollama do computador por `host.docker.internal:11434`. O Qdrant guarda o índice no volume `qdrant_data`.
+O Compose inicia `api`, `worker`, `rabbitmq`, `redis`, `neo4j` e `qdrant`. API e worker montam o volume `ingestion_data`; RabbitMQ, Redis e Neo4j possuem volumes próprios. Os containers acessam o Ollama do computador por `host.docker.internal:11434`. O Qdrant guarda o índice no volume `qdrant_data`.
+
+O serviço publicado pelo Compose usa `8010:8000`: `8010` é a porta do computador e `8000` é a porta interna da API. A configuração está em [`compose.yaml`](../compose.yaml#L22). O Qdrant não usa healthcheck interno porque a imagem oficial não inclui `wget`; sua disponibilidade deve ser confirmada por `/ready` e pelos logs.
 
 Verifique também:
 

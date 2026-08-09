@@ -98,7 +98,7 @@ Leia a descrição completa em [Pipeline RAG](docs/rag-pipeline-explicacao-local
 | Redis | status temporário dos jobs com TTL |
 | Neo4j | grafo opcional de políticas, regras, condições e evidências |
 | pytest, Ruff e mypy | testes, qualidade e verificação de tipos |
-| Docker Compose | API, worker, RabbitMQ, Redis e Qdrant reproduzíveis |
+| Docker Compose | API, worker, RabbitMQ, Redis, Neo4j e Qdrant reproduzíveis |
 
 Os quatro frameworks complementam o código próprio do projeto; regras de segurança, isolamento por empresa, busca híbrida, RRF e re-ranking continuam sob controle da aplicação. Veja [Integração de frameworks](docs/rag-frameworks-integracao-tecnica-v1.md) para responsabilidades, configuração e limites.
 
@@ -125,7 +125,7 @@ uv run python -m scripts.seed_demo
 uv run uvicorn app.main:app --reload
 ```
 
-Acesse [http://localhost:8000](http://localhost:8000). Não abra `app/web/index.html` diretamente: a interface depende da API.
+Acesse [http://localhost:8000](http://localhost:8000). Essa execução usa Uvicorn diretamente e não inicia RabbitMQ, Redis ou Neo4j. Não abra `app/web/index.html` diretamente: a interface depende da API.
 
 A carga inicial indexa as políticas versionadas e os catálogos de dúvidas das duas empresas sintéticas. Somente a versão ativa de cada política participa da busca. Repetir o seed não duplica dados.
 
@@ -148,6 +148,37 @@ docker compose build
 docker compose up -d
 docker compose exec api python -m scripts.seed_demo
 ```
+
+O comando `docker compose build` é necessário quando o código do worker ou da API mudou, porque a imagem Docker pode estar armazenada localmente. No Compose, a interface fica em [http://localhost:8010](http://localhost:8010); a porta interna do container continua sendo `8000`.
+
+Para enviar uma política pelo endpoint assíncrono, use um token obtido em `/v1/auth/login`:
+
+```powershell
+$token = "SEU_TOKEN"
+curl.exe -X POST http://localhost:8010/v1/ingestion `
+  -H "Authorization: Bearer $token" `
+  -F "file=@data/tenants/aurora_tecnologia/policy.md" `
+  -F "document_id=policy" `
+  -F "title=Política de viagens" `
+  -F "version=v3" `
+  -F "valid_from=2026-01-01"
+```
+
+O endpoint responde `202 Accepted` com um `job_id`. Consulte o processamento assim:
+
+```powershell
+curl.exe http://localhost:8010/v1/ingestion/JOB_ID `
+  -H "Authorization: Bearer $token"
+```
+
+Quando `KNOWLEDGE_GRAPH_ENABLED=true`, consulte regras estruturadas por tema:
+
+```powershell
+curl.exe "http://localhost:8010/v1/knowledge-graph/rules?topic=alimentação" `
+  -H "Authorization: Bearer $token"
+```
+
+O fluxo é implementado em [`app/main.py`](app/main.py#L270), publicado por [`app/messaging/rabbitmq.py`](app/messaging/rabbitmq.py#L20) e processado em [`app/worker/ingestion_worker.py`](app/worker/ingestion_worker.py#L26).
 
 Para encerrar:
 
@@ -208,6 +239,7 @@ app/
 ├── generation/      provedor Ollama, prompt e fallback
 ├── guardrails/      proteção da pergunta, fonte e tenant
 ├── ingestion/       leitura, normalização, chunks e indexação
+├── knowledge_graph/  extração e persistência de regras no Neo4j
 ├── messaging/       contratos, RabbitMQ e estado Redis dos jobs
 ├── observability/   health, readiness, métricas e trace
 ├── retrieval/       Qdrant, BM25, RRF, contexto e re-ranking
@@ -250,3 +282,4 @@ tests/               testes unitários, integrados e de segurança
 - RabbitMQ e Redis são dependências do fluxo assíncrono de ingestão; `/ready` atualmente reporta apenas Ollama e Qdrant, portanto a disponibilidade desses componentes deve ser verificada no Compose e nos logs do worker.
 - O volume compartilhado é adequado ao Compose local, mas deve ser substituído por object storage em uma implantação com múltiplos hosts.
 - Revogação de token, rate limiting e monitoramento externo não fazem parte desta demonstração local.
+- No Compose, a porta padrão publicada é `8010` para evitar conflito com outros projetos locais. Para usar `8000`, execute `APP_PUBLISHED_PORT=8000 docker compose up -d` em PowerShell com essa porta livre.

@@ -57,6 +57,7 @@ Esses itens mantêm nomes estáveis e são classificados pelo diretório, coment
 | [`rag-deploy-procedimento-operacao-v1.md`](rag-deploy-procedimento-operacao-v1.md) | RAG | deploy | orientar entrega e retorno | operação | v1 |
 | [`rag-indice-migracao-operacao-v1.md`](rag-indice-migracao-operacao-v1.md) | RAG | índice | migrar dados com segurança | operação | v1 |
 | [`rag-demonstracao-roteiro-avaliacao-v1.md`](rag-demonstracao-roteiro-avaliacao-v1.md) | RAG | demonstração | conduzir apresentação | avaliação | v1 |
+| [`roadmap-produto-evolucao-v1.md`](roadmap-produto-evolucao-v1.md) | produto | roadmap | orientar evolução | estratégia | v1 |
 | [`repositorio-catalogo-classificacao-github-v1.md`](repositorio-catalogo-classificacao-github-v1.md) | repositório | catálogo | classificar o acervo | GitHub | v1 |
 
 ## Decisões arquiteturais classificadas

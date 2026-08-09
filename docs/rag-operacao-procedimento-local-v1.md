@@ -19,8 +19,8 @@ P95 significa que 95% das requisições devem terminar abaixo do limite. A API a
 
 ## Verificação rápida
 
-1. Abra `GET /health`. Se falhar, o processo da API não está acessível.
-2. Abra `GET /ready`. O corpo informa separadamente `ollama` e `qdrant`. RabbitMQ e Redis são dependências do fluxo de ingestão e devem ser verificados no Compose.
+1. Abra `GET /health` em `http://localhost:8010` no Compose ou em `http://localhost:8000` com Uvicorn. Se falhar, o processo da API não está acessível.
+2. Abra `GET /ready`. O corpo informa separadamente `ollama` e `qdrant`. RabbitMQ, Redis, Neo4j e worker são dependências do fluxo de ingestão e devem ser verificados com `docker compose ps`.
 3. Abra `GET /metrics`. Compare erros, retries, fallbacks, volume e latências.
 4. Copie o `X-Request-ID` da resposta ou o `request_id` do JSON.
 5. Procure esse identificador nos eventos `http_request` e `rag_trace`.

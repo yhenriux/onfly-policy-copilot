@@ -3,7 +3,7 @@
 ## Evidências
 
 - Referência visual: `C:\Users\yhenr\.codex\generated_images\019fbeed-7706-70b3-84ac-72d9839b4180\exec-ffb8d0d8-e307-4e47-97bc-2f2865cafa5d.png`
-- Implementação: `http://localhost:8000/`, capturada no navegador integrado em 2026-08-02.
+- Implementação local: `http://localhost:8000/` com Uvicorn; implementação Docker: `http://localhost:8010/`. Captura original realizada no navegador integrado em 2026-08-02.
 - Viewport de comparação: desktop, 1248 × 788 CSS px. A referência é 1440 × 1024 px; a composição foi comparada por regiões, sem normalização de densidade.
 - Estado: Aurora autenticada, pergunta “Posso usar aplicativo de transporte?” respondida, com fontes, 10 chunks no Top-k e trace visível. A API também foi validada separadamente com login e `POST /v1/ask` locais.
 
