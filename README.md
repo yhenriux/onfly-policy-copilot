@@ -262,6 +262,7 @@ tests/               testes unitários, integrados e de segurança
 
 - [Catálogo e organização do repositório](docs/repositorio-catalogo-classificacao-github-v1.md)
 - [Arquitetura](docs/rag-arquitetura-explicacao-local-v1.md)
+- [Ontologia do grafo de conhecimento](docs/rag-ontologia-conhecimento-v1.md)
 - [Pipeline RAG](docs/rag-pipeline-explicacao-local-v1.md)
 - [Prova de conceito](docs/rag-prova-validacao-tecnica-v1.md)
 - [Guia do código RAG](docs/rag-codigo-navegacao-tecnica-v1.md)

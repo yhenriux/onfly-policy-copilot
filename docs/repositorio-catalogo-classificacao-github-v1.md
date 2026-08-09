@@ -48,6 +48,7 @@ Esses itens mantêm nomes estáveis e são classificados pelo diretório, coment
 | Arquivo | Assunto | Tipo | Finalidade | Contexto | Versão |
 |---|---|---|---|---|---|
 | [`rag-arquitetura-explicacao-local-v1.md`](rag-arquitetura-explicacao-local-v1.md) | RAG | arquitetura | explicar componentes | local | v1 |
+| [`rag-ontologia-conhecimento-v1.md`](rag-ontologia-conhecimento-v1.md) | RAG | ontologia | explicar nós e relacionamentos do Neo4j | técnica | v1 |
 | [`rag-pipeline-explicacao-local-v1.md`](rag-pipeline-explicacao-local-v1.md) | RAG | pipeline | explicar fluxo | local | v1 |
 | [`rag-prova-validacao-tecnica-v1.md`](rag-prova-validacao-tecnica-v1.md) | RAG | prova | validar hipótese | técnica | v1 |
 | [`rag-codigo-navegacao-tecnica-v1.md`](rag-codigo-navegacao-tecnica-v1.md) | RAG | código | navegar implementação | técnica | v1 |
