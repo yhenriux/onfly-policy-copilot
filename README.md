@@ -262,6 +262,8 @@ tests/               testes unitários, integrados e de segurança
 
 ## Documentação técnica
 
+- [Biblioteca técnica e índice por tarefa](docs/README.md)
+- [Fluxos operacionais com Mermaid](docs/fluxos-operacionais-v1.md)
 - [Especificação de design conversacional e UX Writing para LLMs e agentes](docs/especificacao-design-conversacional-ux-writing-llm-agentes-v1.md)
 - [Catálogo e organização do repositório](docs/repositorio-catalogo-classificacao-github-v1.md)
 - [Arquitetura](docs/rag-arquitetura-explicacao-local-v1.md)
@@ -280,7 +282,7 @@ tests/               testes unitários, integrados e de segurança
 
 ## Limitações conhecidas
 
-- O modelo de 1B pode recusar uma resposta mesmo quando o retrieval encontrou uma fonte forte. Nesse caso, o sistema mostra a fonte em modo degradado sem inventar conteúdo.
+- O modelo leve `llama3.2:3b` pode recusar uma resposta mesmo quando o retrieval encontrou uma fonte forte. Nesse caso, a camada factual organiza a evidência e marca a resposta como degradada.
 - A primeira consulta carrega o CrossEncoder e pode ser mais lenta.
 - Feedback e métricas operacionais ficam em memória e são apagados ao reiniciar a API.
 - RabbitMQ e Redis são dependências do fluxo assíncrono de ingestão; `/ready` atualmente reporta apenas Ollama e Qdrant, portanto a disponibilidade desses componentes deve ser verificada no Compose e nos logs do worker.

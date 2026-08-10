@@ -10,7 +10,7 @@ Usar uma interface comum de provedor. O Ollama devolve JSON validado pelo Pydant
 
 Falhas transitórias usam novas tentativas com espera crescente. Falha final de geração devolve uma resposta degradada sem afirmação factual. Falha de embedding mantém HTTP 503, pois não existe recuperação segura sem o vetor da pergunta.
 
-Somente evidências com score mínimo de `0,50` participam da geração e, para o modelo de 1B atual, apenas o trecho mais forte é enviado por padrão.
+Somente evidências com score mínimo de `0,50` participam da geração e até três chunks elegíveis podem compor o contexto. O modelo leve atual é `llama3.2:3b`; quando ele recusa uma fonte suficiente, a camada factual organiza a evidência em modo degradado.
 
 ## Consequências
 
