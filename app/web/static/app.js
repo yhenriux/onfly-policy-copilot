@@ -58,6 +58,7 @@ const elements = {
   stateMessage: document.querySelector("#state-message"),
   responseCard: document.querySelector("#response-card"),
   answerText: document.querySelector("#answer-text"),
+  answerKind: document.querySelector("#answer-kind"),
   confidenceBadge: document.querySelector("#confidence-badge"),
   sourcesSection: document.querySelector("#sources-section"),
   sourcesList: document.querySelector("#sources-list"),
@@ -109,7 +110,7 @@ async function checkOperations() {
     } else {
       const unavailable = Object.entries(data.dependencies || {}).filter(([, ready]) => !ready).map(([name]) => name).join(" e ");
       dot.className = "status-dot down";
-      label.textContent = `Dependências indisponíveis: ${unavailable || "verifique a API"}`;
+      label.textContent = `Dependências pendentes: ${unavailable || "verifique os serviços"}`;
     }
   } catch {
     dot.className = "status-dot down";
@@ -250,11 +251,17 @@ function handleApiError(status, detail) {
 function renderResponse(data) {
   state.requestId = data.request_id;
   elements.answerText.textContent = data.answer;
+  elements.answerKind.textContent = data.generation.status === "generated"
+    ? "Resposta gerada com fontes"
+    : data.generation.status === "degraded"
+      ? "Fonte encontrada, interpretação limitada"
+      : "Orientação não encontrada na base";
   renderConfidence(data.confidence);
   renderSources(data.sources || []);
   renderTrace(data);
   setHidden(elements.feedbackRow, false);
   setHidden(elements.responseCard, false);
+  updateGuide(5);
   trackInteraction("answer_displayed");
   if (data.generation.status === "no_evidence" || !(data.sources || []).length) {
     showState("info", "Não encontramos essa informação", "Tente dar mais detalhes ou procure a equipe responsável por viagens da sua empresa.");
@@ -262,6 +269,12 @@ function renderResponse(data) {
     showState("warning", "Precisa de uma confirmação", "Encontramos uma regra relacionada, mas o assistente não conseguiu interpretá-la com segurança. Confira a fonte ou fale com a equipe responsável.");
   }
   elements.responseCard.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function updateGuide(activeStep) {
+  document.querySelectorAll(".guide-step").forEach((step) => {
+    step.classList.toggle("active", Number(step.dataset.step) === activeStep);
+  });
 }
 
 function renderConfidence(confidence) {

@@ -316,25 +316,35 @@ function renderAll(counters, latencies, indicators) {
 }
 
 async function loadMetrics() {
-  try {
-    const [metricsResponse, sessionsResponse, responsesResponse] = await Promise.all([
-      fetch(`${API_BASE_URL}/metrics`),
-      fetch(`${API_BASE_URL}/observability/sessions`),
-      fetch(`${API_BASE_URL}/observability/responses`),
-    ]);
-    if (!metricsResponse.ok || !sessionsResponse.ok || !responsesResponse.ok) throw new Error("Falha ao carregar observabilidade");
-    const text = await metricsResponse.text();
-    const sessions = await sessionsResponse.json();
-    const responses = await responsesResponse.json();
+  const results = await Promise.allSettled([
+    fetch(`${API_BASE_URL}/metrics`),
+    fetch(`${API_BASE_URL}/observability/sessions`),
+    fetch(`${API_BASE_URL}/observability/responses`),
+  ]);
+  const [metricsResult, sessionsResult, responsesResult] = results;
+  const metricsOk = metricsResult.status === "fulfilled" && metricsResult.value.ok;
+  const historyOk = sessionsResult.status === "fulfilled" && sessionsResult.value.ok
+    && responsesResult.status === "fulfilled" && responsesResult.value.ok;
+  if (metricsOk) {
+    const text = await metricsResult.value.text();
     const { counters, latencies, indicators } = classify(parseMetrics(text));
+    renderAll(counters, latencies, indicators);
+  }
+  if (historyOk) {
+    renderHistory(await sessionsResult.value.json(), await responsesResult.value.json());
+  }
+  if (metricsOk && historyOk) {
     setHidden(elements.error, true);
     setStatus("", "Ao vivo");
-    renderAll(counters, latencies, indicators);
-    renderHistory(sessions, responses);
-  } catch (error) {
-    console.error("Falha ao carregar métricas", error);
+  } else if (metricsOk || historyOk) {
+    setStatus("checking", "Dados parciais");
+    elements.error.textContent = metricsOk
+      ? "As métricas atuais estão disponíveis, mas o histórico não pôde ser atualizado."
+      : "O histórico está disponível, mas as métricas atuais não puderam ser atualizadas.";
+    setHidden(elements.error, false);
+  } else {
     setStatus("down", "API indisponível");
-    elements.error.textContent = "Não foi possível carregar as métricas agora. Confira se os serviços estão ligados e tente novamente.";
+    elements.error.textContent = "Não foi possível carregar a observabilidade agora. Confira se a API está ligada e tente novamente.";
     setHidden(elements.error, false);
   }
 }
