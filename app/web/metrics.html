@@ -9,9 +9,9 @@
       // O painel depende da API. Abrir o arquivo redireciona para o endereço correto.
       if (window.location.protocol === "file:") window.location.replace("http://localhost:8000/metrics/ui");
     </script>
-    <link rel="stylesheet" href="./static/styles.css" />
-    <link rel="stylesheet" href="./static/metrics.css" />
-    <script src="./static/metrics.js" defer></script>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/metrics.css" />
+    <script src="/static/metrics.js" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Ir para o conteúdo</a>
@@ -26,7 +26,7 @@
           <span class="status-dot checking"></span><span>Conectando...</span>
         </div>
         <a class="header-link" href="/" rel="noreferrer">Assistente</a>
-        <a class="header-link" href="./metrics" target="_blank" rel="noreferrer">Prometheus</a>
+        <a class="header-link" href="/metrics" target="_blank" rel="noreferrer">Prometheus</a>
         <button class="outline-button" id="refresh-button" type="button">Atualizar</button>
       </div>
     </header>
