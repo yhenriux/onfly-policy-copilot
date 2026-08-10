@@ -55,6 +55,7 @@
 
 .empty-note { margin: .4rem 0; color: var(--muted); font-size: .74rem; }
 .history-layout { display: grid; grid-template-columns: minmax(210px, .75fr) minmax(0, 1.25fr); gap: 1rem; }
+.history-events { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }.history-events h3 { margin: 0 0 .65rem; font-size: .76rem; }
 .session-list, .response-history { display: grid; align-content: start; gap: .5rem; }
 .session-card { padding: .75rem .85rem; color: var(--ink); text-align: left; background: #fafaf8; border: 1px solid var(--line); border-radius: 9px; }
 .session-card:hover, .session-card.selected { border-color: var(--blue); background: var(--blue-soft); }

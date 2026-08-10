@@ -60,6 +60,15 @@ const eventLabels = {
   request_id_copied: "Protocolos copiados",
 };
 
+const counterPattern = /^(requests_total|errors_total|retries_total|fallbacks_total|answers(?:_|$)|user_event_)/;
+const indicatorNames = [
+  "retrieval_top1_score",
+  "retrieval_top1_evidence_eligible",
+  "sources_per_answer",
+  "estimated_output_tokens",
+  "estimated_local_cost_usd",
+];
+
 function makeElement(tag, className, text) {
   const element = document.createElement(tag);
   if (className) element.className = className;
@@ -115,13 +124,20 @@ function classify(metrics) {
       latencies[component][latencyMatch[2]] = metrics[name];
       continue;
     }
-    const indicatorMatch = name.match(/^(.+)_(average|count|total)$/);
-    if (indicatorMatch) {
-      const indicator = indicatorMatch[1];
-      indicators[indicator] = indicators[indicator] || {};
-      indicators[indicator][indicatorMatch[2]] = metrics[name];
+    if (counterPattern.test(name)) {
+      counters[name] = metrics[name];
       continue;
     }
+    for (const indicator of indicatorNames) {
+      if (name === indicator) {
+        indicators[indicator] = { ...indicators[indicator], average: metrics[name] };
+      } else if (name === `${indicator}_total`) {
+        indicators[indicator] = { ...indicators[indicator], total: metrics[name] };
+      } else if (name === `${indicator}_count`) {
+        indicators[indicator] = { ...indicators[indicator], count: metrics[name] };
+      }
+    }
+    if (indicatorNames.some((indicator) => name === indicator || name.startsWith(`${indicator}_`))) continue;
     counters[name] = metrics[name];
   }
   return { counters, latencies, indicators };
