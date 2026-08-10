@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 224 56" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190 56" role="img" aria-labelledby="title desc">
   <title id="title">Onfly</title>
   <desc id="desc">Logo Onfly azul com globo ao lado do nome</desc>
   <text x="0" y="43" fill="#1296df" font-family="Arial Black, Arial, sans-serif" font-size="49" font-weight="900" letter-spacing="-4">onfly</text>
   <g fill="none" stroke="#1296df" stroke-width="2.1">
-    <circle cx="194" cy="28" r="19"/>
-    <ellipse cx="194" cy="28" rx="8" ry="19"/>
-    <ellipse cx="194" cy="28" rx="15" ry="19"/>
-    <path d="M175 28h38M178 19h32M178 37h32"/>
+    <circle cx="164" cy="28" r="19"/>
+    <ellipse cx="164" cy="28" rx="8" ry="19"/>
+    <ellipse cx="164" cy="28" rx="15" ry="19"/>
+    <path d="M145 28h38M148 19h32M148 37h32"/>
   </g>
 </svg>
