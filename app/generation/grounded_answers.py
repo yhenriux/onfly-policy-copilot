@@ -24,6 +24,36 @@ class GroundedAnswer:
     chunks: list[RetrievedChunk]
 
 
+def extract_grounding_facts(chunks: list[RetrievedChunk]) -> list[str]:
+    """Extrai frases com limites, condições e ações para orientar a geração."""
+
+    facts: list[str] = []
+    markers = (
+        "r$",
+        "permit",
+        "pode",
+        "deve",
+        "não pode",
+        "até",
+        "prazo",
+        "aprovação",
+        "comprov",
+        "quando",
+        "entre",
+        "exige",
+    )
+    for chunk in chunks:
+        for sentence in re.split(r"(?<=[.!?])\s+", chunk.text.strip()):
+            normalized = _plain(sentence)
+            if (
+                sentence
+                and any(marker in normalized for marker in markers)
+                and sentence not in facts
+            ):
+                facts.append(sentence)
+    return facts[:8]
+
+
 _INTENTS = (
     (("mala", "bagagem", "despachar"), "bagagem", ("bagagem",), "Bagagem"),
     (("hotel", "hospedagem", "diaria"), "hospedagem", ("hospedagem",), "Hospedagem"),

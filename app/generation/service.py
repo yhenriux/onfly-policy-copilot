@@ -21,7 +21,7 @@ from app.domain.schemas import (
     GenerationMetadata,
     SourceReference,
 )
-from app.generation.grounded_answers import rewrite_frequent_question
+from app.generation.grounded_answers import extract_grounding_facts, rewrite_frequent_question
 from app.generation.provider import GenerationProvider, ProviderResult
 from app.guardrails.input_guardrail import ensure_safe_question
 from app.guardrails.output_guardrail import keep_safe_document_chunks
@@ -142,6 +142,8 @@ class AskService:
                     latency_ms=_elapsed_ms(started_at),
                     generation=_metadata(result, status="generated"),
                 )
+            if chunks[0].score >= self._evidence_min_score:
+                return self._source_backed_response(chunks[0], started_at, attempts=result.attempts)
             # Sem uma saída generativa válida, mostramos a evidência sem inventar interpretação.
             return self._degraded_response(chunks[0], started_at, attempts=result.attempts)
         if any(position > len(chunks) for position in result.output.cited_source_positions):
@@ -188,6 +190,30 @@ class AskService:
             ),
             sources=[_source(chunk)],
             confidence="low",
+            request_id=current_trace().request_id,
+            latency_ms=_elapsed_ms(started_at),
+            generation=GenerationMetadata(
+                provider=self._provider.provider_name,
+                model=self._provider.generation_model,
+                prompt_version=self._provider.prompt_version,
+                status="degraded",
+                attempts=attempts,
+            ),
+        )
+
+    def _source_backed_response(
+        self, chunk: RetrievedChunk, started_at: float, *, attempts: int
+    ) -> AskResponse:
+        """Organiza fatos da fonte quando o modelo recusa evidência suficiente."""
+
+        facts = extract_grounding_facts([chunk])
+        answer = "Encontrei uma regra aplicável na política:\n\n"
+        answer += " ".join(facts[:3]) if facts else chunk.text
+        answer += "\n\nConfirme as condições acima antes de concluir a solicitação."
+        return AskResponse(
+            answer=answer,
+            sources=[_source(chunk)],
+            confidence="medium",
             request_id=current_trace().request_id,
             latency_ms=_elapsed_ms(started_at),
             generation=GenerationMetadata(

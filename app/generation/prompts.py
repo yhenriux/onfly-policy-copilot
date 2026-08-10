@@ -1,6 +1,7 @@
 """Instruções versionadas enviadas ao modelo de linguagem."""
 
 from app.domain.models import RetrievedChunk
+from app.generation.grounded_answers import extract_grounding_facts
 
 PROMPT_VERSION = "policy_answer_v2"
 
@@ -26,7 +27,10 @@ def build_user_prompt(question: str, chunks: list[RetrievedChunk]) -> str:
         f"[Fonte {position} | {chunk.title} | {chunk.section}]\n{chunk.text}"
         for position, chunk in enumerate(chunks, start=1)
     )
-    return f"Evidências autorizadas:\n{context}\n\nPergunta: {question}"
+    facts = "\n".join(f"- {fact}" for fact in extract_grounding_facts(chunks))
+    return (
+        f"Fatos extraídos:\n{facts}\n\nEvidências autorizadas:\n{context}\n\nPergunta: {question}"
+    )
 
 
 def build_citation_repair_prompt(
