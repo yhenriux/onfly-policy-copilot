@@ -10,7 +10,12 @@ from pydantic import BaseModel, ValidationError
 from app.core.exceptions import OllamaUnavailableError
 from app.domain.models import RetrievedChunk
 from app.domain.schemas import GenerationOutput
-from app.generation.prompts import PROMPT_VERSION, SYSTEM_PROMPT, build_user_prompt
+from app.generation.prompts import (
+    PROMPT_VERSION,
+    SYSTEM_PROMPT,
+    build_citation_repair_prompt,
+    build_user_prompt,
+)
 from app.generation.provider import ProviderResult
 
 ResponseModel = TypeVar("ResponseModel", bound=BaseModel)
@@ -141,6 +146,34 @@ class OllamaProvider:
             raise OllamaUnavailableError(
                 "Ollama returned invalid structured output", attempts=attempts
             ) from error
+        if not output.evidence_found:
+            repair_chat, repair_attempts = await self._request(
+                "/api/chat",
+                {
+                    "model": self._generation_model,
+                    "stream": False,
+                    "format": GenerationOutput.model_json_schema(),
+                    "options": {"temperature": 0},
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {
+                            "role": "user",
+                            "content": build_citation_repair_prompt(
+                                question, output.answer, chunks
+                            ),
+                        },
+                    ],
+                },
+                _ChatResponse,
+                operation="citation repair",
+            )
+            try:
+                output = GenerationOutput.model_validate_json(repair_chat.message.content)
+            except (ValidationError, ValueError) as error:
+                raise OllamaUnavailableError(
+                    "Ollama returned invalid citation repair output", attempts=repair_attempts
+                ) from error
+            attempts += repair_attempts
         if output.evidence_found and output.confidence == "low":
             # Uma fonte citada indica suporte parcial; low fica reservado para ausência de suporte.
             output = output.model_copy(update={"confidence": "medium"})

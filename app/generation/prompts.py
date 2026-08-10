@@ -27,3 +27,24 @@ def build_user_prompt(question: str, chunks: list[RetrievedChunk]) -> str:
         for position, chunk in enumerate(chunks, start=1)
     )
     return f"Evidências autorizadas:\n{context}\n\nPergunta: {question}"
+
+
+def build_citation_repair_prompt(
+    question: str,
+    answer: str,
+    chunks: list[RetrievedChunk],
+) -> str:
+    """Pede ao modelo que relacione uma resposta já gerada às fontes autorizadas."""
+
+    context = "\n\n".join(
+        f"[Fonte {position}] {chunk.title} | {chunk.section}\n{chunk.text}"
+        for position, chunk in enumerate(chunks, start=1)
+    )
+    return (
+        "Revise a resposta abaixo usando somente as fontes numeradas. Mantenha o texto se ele "
+        "estiver sustentado; ajuste-o se necessário. Retorne uma resposta completa, cite pelo "
+        "menos uma fonte que realmente sustente a conclusão e classifique a confiança como "
+        "high ou medium. Se nenhuma fonte sustentar a resposta, deixe a lista de citações vazia "
+        "e use low.\n\n"
+        f"Pergunta: {question}\n\nResposta gerada: {answer}\n\nEvidências:\n{context}"
+    )

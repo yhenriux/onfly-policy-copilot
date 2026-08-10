@@ -9,7 +9,12 @@ from langchain_ollama import ChatOllama, OllamaEmbeddings
 from app.core.exceptions import OllamaUnavailableError
 from app.domain.models import RetrievedChunk
 from app.domain.schemas import GenerationOutput
-from app.generation.prompts import PROMPT_VERSION, SYSTEM_PROMPT, build_user_prompt
+from app.generation.prompts import (
+    PROMPT_VERSION,
+    SYSTEM_PROMPT,
+    build_citation_repair_prompt,
+    build_user_prompt,
+)
 from app.generation.provider import ProviderResult
 
 
@@ -85,6 +90,22 @@ class LangChainOllamaProvider:
                     if isinstance(output, GenerationOutput)
                     else GenerationOutput.model_validate(output)
                 )
+                if not validated.evidence_found:
+                    repaired = await self._structured_chat.ainvoke(
+                        [
+                            SystemMessage(content=SYSTEM_PROMPT),
+                            HumanMessage(
+                                content=build_citation_repair_prompt(
+                                    question, validated.answer, chunks
+                                )
+                            ),
+                        ]
+                    )
+                    validated = (
+                        repaired
+                        if isinstance(repaired, GenerationOutput)
+                        else GenerationOutput.model_validate(repaired)
+                    )
                 if validated.evidence_found and validated.confidence == "low":
                     # Fonte citada indica suporte parcial; low fica para ausência de suporte.
                     validated = validated.model_copy(update={"confidence": "medium"})
