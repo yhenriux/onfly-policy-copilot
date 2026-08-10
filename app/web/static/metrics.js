@@ -15,6 +15,8 @@ const elements = {
   confidenceBars: document.querySelector("#confidence-bars"),
   indicatorGrid: document.querySelector("#indicator-grid"),
   eventGrid: document.querySelector("#event-grid"),
+  sessionList: document.querySelector("#session-list"),
+  responseHistory: document.querySelector("#response-history"),
 };
 
 const latencyOrder = ["http_total", "ollama_embedding", "retrieval", "reranking", "ollama_generation", "total"];
@@ -252,6 +254,57 @@ function renderEvents(counters) {
   });
 }
 
+function renderHistory(sessions, responses) {
+  elements.sessionList.replaceChildren();
+  elements.responseHistory.replaceChildren();
+  if (!sessions.length) {
+    elements.sessionList.append(makeElement("p", "empty-note", "Nenhuma sessão registrada ainda."));
+  } else {
+    sessions.forEach((session, index) => {
+      const button = makeElement("button", `session-card ${index === 0 ? "selected" : ""}`.trim());
+      button.type = "button";
+      button.dataset.sessionId = session.session_id;
+      button.append(
+        makeElement("strong", null, session.tenant_id),
+        makeElement("span", null, `${formatNumber(session.responses)} respostas · ${formatMs(session.average_latency_ms)} média`),
+        makeElement("small", null, new Date(session.last_activity).toLocaleString("pt-BR")),
+      );
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".session-card").forEach((item) => item.classList.remove("selected"));
+        button.classList.add("selected");
+        renderResponseRows(responses.filter((item) => item.session_id === session.session_id));
+      });
+      elements.sessionList.append(button);
+    });
+  }
+  renderResponseRows(sessions.length ? responses.filter((item) => item.session_id === sessions[0].session_id) : responses);
+}
+
+function renderResponseRows(responses) {
+  elements.responseHistory.replaceChildren();
+  if (!responses.length) {
+    elements.responseHistory.append(makeElement("p", "empty-note", "Nenhuma resposta registrada nesta sessão."));
+    return;
+  }
+  responses.forEach((item) => {
+    const row = makeElement("article", "response-history-row");
+    const title = makeElement("div", "response-history-main");
+    title.append(
+      makeElement("strong", null, item.request_id),
+      makeElement("span", null, new Date(item.created_at).toLocaleString("pt-BR")),
+    );
+    const metrics = makeElement("div", "response-history-metrics");
+    metrics.append(
+      makeElement("b", null, formatMs(item.latency_ms)),
+      makeElement("span", null, `${item.sources_count} fontes`),
+      makeElement("span", null, `${item.output_tokens} tokens`),
+      makeElement("span", `history-status ${item.status}`, item.status),
+    );
+    row.append(title, metrics);
+    elements.responseHistory.append(row);
+  });
+}
+
 function renderAll(counters, latencies, indicators) {
   renderKpis(counters);
   renderLatencies(latencies);
@@ -264,13 +317,20 @@ function renderAll(counters, latencies, indicators) {
 
 async function loadMetrics() {
   try {
-    const response = await fetch(`${API_BASE_URL}/metrics`);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const text = await response.text();
+    const [metricsResponse, sessionsResponse, responsesResponse] = await Promise.all([
+      fetch(`${API_BASE_URL}/metrics`),
+      fetch(`${API_BASE_URL}/observability/sessions`),
+      fetch(`${API_BASE_URL}/observability/responses`),
+    ]);
+    if (!metricsResponse.ok || !sessionsResponse.ok || !responsesResponse.ok) throw new Error("Falha ao carregar observabilidade");
+    const text = await metricsResponse.text();
+    const sessions = await sessionsResponse.json();
+    const responses = await responsesResponse.json();
     const { counters, latencies, indicators } = classify(parseMetrics(text));
     setHidden(elements.error, true);
     setStatus("", "Ao vivo");
     renderAll(counters, latencies, indicators);
+    renderHistory(sessions, responses);
   } catch (error) {
     console.error("Falha ao carregar métricas", error);
     setStatus("down", "API indisponível");

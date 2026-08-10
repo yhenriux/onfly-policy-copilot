@@ -50,6 +50,7 @@ from app.messaging.schemas import IngestionJob, IngestionJobStatus
 from app.observability.health import LocalReadinessChecker, ReadinessChecker
 from app.observability.langsmith import configure_langsmith, trace_user_event
 from app.observability.metrics import operational_metrics, render_prometheus
+from app.observability.session_store import ObservabilityStore
 from app.observability.tracing import current_trace, finish_trace, start_trace
 from app.orchestration.rag_graph import LangGraphAskHandler
 from app.retrieval.contextual import ContextualRetriever
@@ -115,6 +116,7 @@ def create_app(
     feedback_store: InMemoryFeedbackStore | None = None,
     job_publisher: JobPublisher | None = None,
     job_status_store: JobStatusStore | None = None,
+    observability_store: ObservabilityStore | None = None,
 ) -> FastAPI:
     """Monta a API com as configurações informadas para a execução."""
 
@@ -151,6 +153,9 @@ def create_app(
     )
     runtime_job_store = job_status_store or RedisJobStatusStore(
         runtime_settings.redis_url, runtime_settings.redis_job_ttl_seconds
+    )
+    runtime_observability = observability_store or ObservabilityStore(
+        runtime_settings.observability_db_path
     )
     runtime_graph = (
         Neo4jKnowledgeGraph(
@@ -242,6 +247,18 @@ def create_app(
         """Entrega o painel de visualização das métricas do processo."""
 
         return FileResponse(web_root / "metrics.html")
+
+    @application.get("/observability/sessions", tags=["operations"])
+    def observability_sessions() -> list[dict[str, Any]]:
+        """Lista sessões observadas e o volume de respostas de cada uma."""
+
+        return runtime_observability.sessions()
+
+    @application.get("/observability/responses", tags=["operations"])
+    def observability_responses(session_id: str | None = None) -> list[dict[str, Any]]:
+        """Lista métricas individuais das respostas observadas."""
+
+        return runtime_observability.responses(session_id=session_id)
 
     @application.get("/", include_in_schema=False)
     def frontend() -> FileResponse:
@@ -461,6 +478,7 @@ def create_app(
     async def ask(
         request: AskRequest,
         context: Annotated[AuthenticatedContext, Depends(authenticated_context)],
+        session_id: Annotated[str | None, Header(alias="X-Session-ID")] = None,
     ) -> AskResponse:
         """Responde usando trechos recuperados das políticas autorizadas."""
 
@@ -471,6 +489,12 @@ def create_app(
         try:
             response = await ask_handler.ask(request, context)
             runtime_feedback.register_request(response.request_id, context.tenant_id)
+            runtime_observability.record(
+                response,
+                session_id=session_id or "session_unknown",
+                tenant_id=context.tenant_id,
+                user_id=context.user_id,
+            )
             return response
         except PromptInjectionError as error:
             raise HTTPException(

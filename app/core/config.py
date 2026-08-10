@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     redis_job_ttl_seconds: int = Field(default=86_400, ge=60, le=2_592_000)
     ingestion_storage_path: Path = Path(".local/ingestion")
+    observability_db_path: Path = Path(".local/ingestion/observability.sqlite")
     ingestion_max_file_bytes: int = Field(default=10_000_000, ge=1_024, le=100_000_000)
 
     knowledge_graph_enabled: bool = False

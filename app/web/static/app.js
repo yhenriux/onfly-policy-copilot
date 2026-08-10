@@ -29,7 +29,13 @@ const exampleQuestions = [
   "Posso usar aplicativo de transporte?",
 ];
 
-const state = { token: null, identity: null, context: null, requestId: null };
+const state = {
+  token: null,
+  identity: null,
+  context: null,
+  requestId: null,
+  sessionId: window.crypto?.randomUUID?.() || `session_${Date.now()}`,
+};
 const elements = {
   loginView: document.querySelector("#login-view"),
   workspace: document.querySelector("#workspace"),
@@ -76,7 +82,11 @@ function setHidden(element, hidden) {
 async function api(path, options = {}, timeoutMs = 70000) {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
-  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  const headers = {
+    "Content-Type": "application/json",
+    "X-Session-ID": state.sessionId,
+    ...(options.headers || {}),
+  };
   if (state.token) headers.Authorization = `Bearer ${state.token}`;
   try {
     return await fetch(`${API_BASE_URL}${path}`, { ...options, headers, signal: controller.signal });
