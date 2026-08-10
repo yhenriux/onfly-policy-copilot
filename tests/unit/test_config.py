@@ -22,7 +22,7 @@ def test_settings_use_expected_defaults(monkeypatch: pytest.MonkeyPatch) -> None
     settings = _SettingsWithoutDotEnv()
 
     assert settings.app_port == 8000
-    assert settings.ollama_generation_model == "llama3.2:1b"
+    assert settings.ollama_generation_model == "llama3.2:3b"
     assert settings.retrieval_top_k == 10
     assert settings.context_top_k == 10
 

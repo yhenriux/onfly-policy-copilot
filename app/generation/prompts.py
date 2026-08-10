@@ -41,10 +41,10 @@ def build_citation_repair_prompt(
         for position, chunk in enumerate(chunks, start=1)
     )
     return (
-        "Revise a resposta abaixo usando somente as fontes numeradas. Mantenha o texto se ele "
-        "estiver sustentado; ajuste-o se necessário. Retorne uma resposta completa, cite pelo "
-        "menos uma fonte que realmente sustente a conclusão e classifique a confiança como "
-        "high ou medium. Se nenhuma fonte sustentar a resposta, deixe a lista de citações vazia "
-        "e use low.\n\n"
+        "A resposta inicial pode ter sido uma recusa incorreta. Não preserve uma recusa se as "
+        "fontes responderem à pergunta. Reconstrua a resposta diretamente a partir das fontes, "
+        "com conclusão, condições e limites relevantes. Cite pelo menos uma fonte que sustente "
+        "a conclusão e classifique a confiança como high ou medium. Somente deixe a lista de "
+        "citações vazia e use low se nenhuma fonte responder de fato à pergunta.\n\n"
         f"Pergunta: {question}\n\nResposta gerada: {answer}\n\nEvidências:\n{context}"
     )

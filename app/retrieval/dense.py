@@ -165,7 +165,9 @@ class QdrantVectorStore:
                 "search_status": "active",
                 "deletion_status": "available",
             }
-            document = Document(text=chunk.text, metadata=metadata)
+            # O texto de resposta permanece limpo; o embedding recebe contexto semântico adicional.
+            embedding_text = f"{chunk.title}\n{chunk.section}\n{chunk.text}"
+            document = Document(text=embedding_text, metadata=metadata)
             nodes.append(
                 TextNode(
                     id_=str(

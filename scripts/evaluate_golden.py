@@ -18,7 +18,7 @@ from app.generation.service import AskService
 from app.guardrails.tenant_guardrail import TenantGuardedRetriever
 from app.retrieval.context import select_context
 from app.retrieval.contextual import ContextualRetriever
-from app.retrieval.dense import QdrantVectorStore
+from app.retrieval.factory import build_vector_store
 from app.retrieval.hybrid import HybridRetriever
 from app.retrieval.reranker import LocalCrossEncoderReranker
 
@@ -55,7 +55,7 @@ async def evaluate(dataset_path: Path, output_path: Path | None) -> dict[str, An
         retry_attempts=settings.ollama_retry_attempts,
         retry_backoff_seconds=settings.ollama_retry_backoff_seconds,
     )
-    store = QdrantVectorStore(path=settings.qdrant_path, collection_name=settings.qdrant_collection)
+    store = build_vector_store(settings)
     hybrid = HybridRetriever(
         store,
         candidate_limit=settings.retrieval_top_k,
@@ -113,7 +113,16 @@ async def evaluate(dataset_path: Path, output_path: Path | None) -> dict[str, An
             }
             for method, rank in ranks.items():
                 retrieval_ranks[method].append(rank)
-            retrieval_details.append({"case_id": case.case_id, "ranks": ranks})
+            retrieval_details.append(
+                {
+                    "case_id": case.case_id,
+                    "ranks": ranks,
+                    "top1_score": round(reranked_context[0].score, 4)
+                    if reranked_context
+                    else 0.0,
+                    "top1_section": reranked_context[0].section if reranked_context else None,
+                }
+            )
 
         generation_details: list[dict[str, Any]] = []
         correctness: list[float] = []

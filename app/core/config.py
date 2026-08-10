@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     auth_token_ttl_seconds: int = Field(default=3_600, ge=60, le=86_400)
 
     ollama_base_url: AnyHttpUrl = AnyHttpUrl("http://localhost:11434")
-    ollama_generation_model: str = "llama3.2:1b"
+    ollama_generation_model: str = "llama3.2:3b"
     ollama_embedding_model: str = "all-minilm"
     ollama_timeout_seconds: float = Field(default=60.0, gt=0)
     ollama_retry_attempts: int = Field(default=3, ge=1, le=10)
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     qdrant_url: AnyHttpUrl = AnyHttpUrl("http://localhost:6333")
     qdrant_mode: Literal["local", "server"] = "local"
     qdrant_path: Path = Path(".local/qdrant")
-    qdrant_collection: str = "onfly_policy_documents_phase2"
+    qdrant_collection: str = "onfly_policy_documents_phase3"
     qdrant_api_key: SecretStr | None = None
 
     rabbitmq_url: str = "amqp://guest:guest@localhost:5672/"
@@ -79,8 +79,8 @@ class Settings(BaseSettings):
     context_redundancy_threshold: float = Field(default=0.8, gt=0, le=1)
     evidence_min_score: float = Field(default=0.5, ge=0, le=1)
     generation_max_evidence_chunks: int = Field(default=3, ge=1, le=10)
-    chunk_max_chars: int = Field(default=800, ge=200, le=4_000)
-    chunk_overlap_chars: int = Field(default=120, ge=0, le=1_000)
+    chunk_max_chars: int = Field(default=650, ge=200, le=4_000)
+    chunk_overlap_chars: int = Field(default=100, ge=0, le=1_000)
     max_question_length: int = Field(default=2_000, ge=1, le=20_000)
 
     @model_validator(mode="after")
