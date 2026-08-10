@@ -36,7 +36,7 @@ P95 significa que 95% das requisições devem terminar abaixo do limite. A API a
 
 ### Ollama indisponível
 
-- Confirme `ollama list` e a presença de `llama3.2:1b` e `all-minilm`.
+- Confirme `ollama list` e a presença de `llama3.2:3b` e `all-minilm`.
 - Teste `http://localhost:11434/api/tags`.
 - Observe `retries_total`, `fallbacks_total` e `ollama_generation` em `/metrics`.
 - Reinicie o Ollama somente depois de guardar o `request_id` e os logs do caso.

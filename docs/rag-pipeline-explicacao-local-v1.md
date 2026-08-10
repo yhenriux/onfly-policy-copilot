@@ -16,7 +16,7 @@ flowchart TD
     E --> H
     H --> I["RRF e CrossEncoder"]
     I --> J["Contexto enxuto e sem repetições"]
-    J --> K["Resposta fundamentada ou llama3.2:1b"]
+    J --> K["Fatos, geração llama3.2:3b e validação"]
     K --> L["Resposta, fontes, confiança e request_id"]
 ```
 
@@ -58,7 +58,7 @@ Depois do re-ranking, a aplicação remove trechos muito parecidos e respeita um
 
 ## 4. Geração da resposta
 
-Quando há evidência acima do limiar, o `llama3.2:1b`, executado localmente pelo Ollama, recebe apenas o contexto permitido e devolve uma resposta estruturada. A resposta é validada antes de chegar à interface, e nenhuma síntese determinística é interposta no caminho normal.
+Quando há evidência acima do limiar, o `llama3.2:3b`, executado localmente pelo Ollama, recebe fatos e contexto permitido e devolve uma resposta estruturada. A resposta é validada; se o modelo recusar uma fonte forte, a camada factual organiza a evidência em modo degradado.
 
 Se a evidência for insuficiente, a aplicação informa que não encontrou suporte na base. Ela não deve completar uma regra com conhecimento externo ou inventado.
 

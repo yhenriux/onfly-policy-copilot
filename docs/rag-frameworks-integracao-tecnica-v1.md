@@ -6,7 +6,7 @@ O projeto mantém suas regras próprias de RAG e usa os frameworks como camadas 
 
 ## LangChain
 
-[`app/generation/langchain_ollama_provider.py`](../app/generation/langchain_ollama_provider.py) implementa o contrato interno de provedor usando `ChatOllama` e `OllamaEmbeddings`. Ele mantém os modelos locais `llama3.2:1b` e `all-minilm`, mas passa a usar as interfaces intercambiáveis do LangChain.
+[`app/generation/langchain_ollama_provider.py`](../app/generation/langchain_ollama_provider.py) implementa o contrato interno de provedor usando `ChatOllama` e `OllamaEmbeddings`. Ele mantém os modelos locais `llama3.2:3b` e `all-minilm`, mas passa a usar as interfaces intercambiáveis do LangChain.
 
 O seletor `LLM_INTEGRATION` permite escolher `langchain` (padrão) ou `http` (adaptador HTTP anterior). Essa escolha é feita em [`app/main.py`](../app/main.py). O contrato `GenerationProvider` continua protegendo o restante do sistema contra mudanças de fornecedor.
 

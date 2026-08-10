@@ -41,7 +41,7 @@ Confirme `http://localhost:8010/ready`. A resposta deve informar `ollama: true` 
 - Envie feedback positivo ou negativo e explique o vínculo com `request_id`.
 - Mostre o indicador de Ollama e Qdrant, `/metrics` e `/docs`.
 - Se houver tempo, carregue uma política Markdown por `POST /v1/ingestion`, mostre o `202 Accepted` e acompanhe o `job_id` em `GET /v1/ingestion/{job_id}`. Explique RabbitMQ como fila, worker como executor e Redis como estado do job.
-- Encerre com os limites conhecidos: modelo de 1B, primeira consulta mais lenta e feedback em memória.
+- Encerre com os limites conhecidos: modelo local de 3B, primeira consulta mais lenta, fallback factual e histórico operacional local.
 
 ## Plano de contingência
 

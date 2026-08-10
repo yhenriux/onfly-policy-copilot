@@ -3,7 +3,7 @@
 ## Entregue nesta iteração
 
 - Expansão da base sintética para 70 documentos catalogados, cobrindo os 10 domínios prioritários.
-- Reindexação local validada com 250 pontos no Qdrant e 188 chunks no Neo4j.
+- Reindexação semântica validada na coleção Qdrant `onfly_policy_documents_phase3`, com título e seção incorporados ao embedding; a contagem deve ser obtida pelo benchmark da execução atual.
 - Ingestão assíncrona com RabbitMQ, worker, retries e DLQ.
 - Status de jobs no Redis.
 - Grafo Neo4j com `PolicyVersion`, tópicos, condições, exceções e evidências.

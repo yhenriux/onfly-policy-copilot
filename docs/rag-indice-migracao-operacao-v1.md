@@ -9,7 +9,7 @@ Nunca altere a coleção ativa no mesmo lugar. Crie uma nova coleção com nome 
 ## Procedimento
 
 1. Registre no `release.json` a nova `index_schema_version`.
-2. Crie um novo nome, por exemplo `onfly_policy_documents_phase2_v2`.
+2. Crie um novo nome versionado, por exemplo `onfly_policy_documents_phase3`.
 3. Mantenha a coleção anterior sem alterações.
 4. Configure temporariamente `QDRANT_COLLECTION` com o nome novo.
 5. Execute a ingestão completa usando o novo modelo de embeddings e o novo payload.

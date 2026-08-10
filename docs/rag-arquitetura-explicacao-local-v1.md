@@ -12,7 +12,7 @@ flowchart LR
     Guard --> Retrieval["Busca híbrida e re-ranking"]
     Retrieval --> Qdrant["Qdrant"]
     Retrieval --> OllamaQuery["Ollama: all-minilm"]
-    API --> OllamaAnswer["Ollama: llama3.2:1b"]
+    API --> OllamaAnswer["Ollama: llama3.2:3b"]
     API --> Feedback["Feedback em memória"]
     API --> Obs["Logs, trace e métricas"]
     API --> Upload["Upload de política"]
@@ -36,7 +36,7 @@ flowchart LR
 5. O Ollama transforma a pergunta em embedding, que é um vetor numérico de significado.
 6. Qdrant e BM25 recuperam candidatos somente do tenant autenticado.
 7. O CrossEncoder reordena os candidatos em uma thread de trabalho para não bloquear a API.
-8. O `llama3.2:1b` recebe somente o contexto autorizado e produz JSON validado.
+8. O `llama3.2:3b` recebe fatos e contexto autorizado e produz JSON validado.
 9. A resposta inclui fontes, confiança, `request_id` e tempos por componente.
 10. O feedback só é aceito se o `request_id` pertencer ao mesmo tenant.
 

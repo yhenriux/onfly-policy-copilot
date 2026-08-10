@@ -65,7 +65,7 @@ As métricas são determinísticas e não usam outro modelo como juiz. Isso faci
 ## Análise de erros
 
 - O re-ranking levou todas as fontes corretas para a primeira posição.
-- O `llama3.2:1b` encurtou respostas importantes, como `130,00` e `diretor financeiro`.
+- O modelo leve `llama3.2:3b` ainda pode recusar fontes fortes; a camada factual e o golden dataset monitoram esse comportamento.
 - Três perguntas respondíveis viraram `no_evidence` porque o modelo não produziu uma citação válida.
 - A pergunta sobre vacina recebeu a resposta inventada `Não`, apesar de a política não tratar do assunto.
 - Os dois ataques foram bloqueados e nenhum tenant vazou dados.

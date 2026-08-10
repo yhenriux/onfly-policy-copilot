@@ -53,7 +53,7 @@ Outras perguntas prontas na interface testam bagagem despachada, prazo de reembo
 
 O pipeline reúne divisão de documentos por seção, embeddings locais com `all-minilm`, Qdrant, BM25, RRF e CrossEncoder. Em termos simples: ele primeiro encontra trechos relevantes, combina busca por significado e por palavras, reorganiza os melhores resultados e só então prepara a resposta.
 
-O modelo local `llama3.2:1b` é usado quando a pergunta não pertence ao conjunto de perguntas frequentes tratadas diretamente pelas evidências recuperadas. Se não houver suporte suficiente na base, a aplicação informa essa limitação em vez de criar uma regra.
+O modelo local `llama3.2:3b` recebe fatos e evidências recuperadas para todas as perguntas elegíveis. Se não houver suporte suficiente na base, a aplicação informa essa limitação em vez de criar uma regra.
 
 Consulte [Pipeline RAG](rag-pipeline-explicacao-local-v1.md) para a descrição técnica completa e [Arquitetura](rag-arquitetura-explicacao-local-v1.md) para a organização dos componentes.
 

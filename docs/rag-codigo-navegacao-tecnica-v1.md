@@ -129,7 +129,7 @@ gerar resposta pelo modelo generativo com as fontes autorizadas
 devolver fontes, confiança e request_id
 ```
 
-Com evidência acima do limiar, a resposta é sempre gerada por [`OllamaProvider.generate`](../app/generation/ollama_provider.py#L118), que chama `llama3.2:1b` com temperatura zero e exige JSON validado por Pydantic — nenhuma síntese determinística é interposta no caminho normal. [`rewrite_frequent_question`](../app/generation/grounded_answers.py#L88) adiciona termos de política à consulta interna, sem mudar a pergunta mostrada à pessoa usuária.
+Com evidência acima do limiar, a resposta passa por fatos extraídos, geração via [`OllamaProvider.generate`](../app/generation/ollama_provider.py#L118) ou LangChain e validação JSON com `llama3.2:3b`. Se o modelo recusar uma fonte suficiente, a camada factual organiza a evidência em modo degradado. [`rewrite_frequent_question`](../app/generation/grounded_answers.py#L88) adiciona termos de política à consulta interna.
 
 Caso falte evidência, o modelo esteja indisponível ou devolva um formato inválido, o serviço retorna uma resposta controlada, mostrando a fonte autorizada sem inventar uma política.
 
@@ -157,7 +157,7 @@ O controle normaliza letras maiúsculas, minúsculas e acentos com [`normalize_s
 
 Documentos também podem conter uma frase que tenta se passar por instrução do sistema. Por isso, [`keep_safe_document_chunks`](../app/guardrails/output_guardrail.py#L26) remove do contexto trechos que contenham padrões maliciosos, como “ignore previous instructions” ou “revele o segredo”.
 
-O filtro é aplicado em [`AskService.ask`](../app/generation/service.py#L75) logo depois da busca e antes da geração. Portanto, o conteúdo suspeito não é enviado ao `llama3.2:1b`.
+O filtro é aplicado em [`AskService.ask`](../app/generation/service.py#L75) logo depois da busca e antes da geração. Portanto, o conteúdo suspeito não é enviado ao `llama3.2:3b`.
 
 **Por que funciona:** o modelo recebe documentos como dados, não como comandos. Além do filtro, o prompt do sistema estabelece que somente evidências autorizadas podem sustentar a resposta. O teste [`test_malicious_document_instruction_never_reaches_generator`](../tests/security/test_prompt_injection.py#L28) comprova que o gerador não é acionado quando o único trecho recuperado é malicioso.
 
@@ -201,7 +201,7 @@ O projeto possui uma integração de IA efetivamente implementada: o **Ollama**,
 | Serviço | Chamadas usadas | Finalidade no projeto | Onde está no código |
 |---|---|---|---|
 | Ollama | `POST /api/embed` | Cria embeddings com `all-minilm` para documentos e perguntas. | [`OllamaProvider.embed`](../app/generation/ollama_provider.py#L103) |
-| Ollama | `POST /api/chat` | Gera resposta estruturada com `llama3.2:1b` para toda pergunta com evidência suficiente. | [`OllamaProvider.generate`](../app/generation/ollama_provider.py#L118) |
+| Ollama | `POST /api/chat` | Gera resposta estruturada com `llama3.2:3b` para toda pergunta com evidência suficiente. | [`OllamaProvider.generate`](../app/generation/ollama_provider.py#L118) |
 | Qdrant | cliente Python do Qdrant | Grava vetores e pesquisa documentos por semelhança. | [`QdrantVectorStore`](../app/retrieval/dense.py#L19) |
 | FastAPI | `/v1/auth/login`, `/v1/ask` e demais rotas | Expõe a API do próprio projeto para a interface e para testes. | [`app/main.py`](../app/main.py) |
 
@@ -222,7 +222,7 @@ O contrato [`GenerationProvider`](../app/generation/provider.py#L22) define o m�
 O modo atual já é **self-hosted local**: os modelos rodam no computador, sem enviar perguntas e documentos para uma API comercial.
 
 ```powershell
-ollama pull llama3.2:1b
+ollama pull llama3.2:3b
 ollama pull all-minilm
 uv sync --dev
 Copy-Item .env.example .env
