@@ -77,6 +77,27 @@ async def test_provider_generates_embeddings_and_structured_answer() -> None:
     assert result.attempts == 1
 
 
+async def test_provider_normalizes_low_confidence_when_source_is_cited() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        content = {
+            "answer": "Prazo de 10 dias úteis.",
+            "cited_source_positions": [1],
+            "confidence": "low",
+        }
+        return httpx.Response(200, json={"message": {"content": json.dumps(content)}})
+
+    client = httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://ollama.test"
+    )
+    provider = _provider(client)
+    try:
+        result = await provider.generate("Quando solicitar reembolso?", [_chunk()])
+    finally:
+        await provider.close()
+
+    assert result.output.confidence == "medium"
+
+
 async def test_provider_retries_transient_failure_with_backoff() -> None:
     calls = 0
     waits: list[float] = []

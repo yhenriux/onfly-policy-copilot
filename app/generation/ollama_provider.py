@@ -141,6 +141,9 @@ class OllamaProvider:
             raise OllamaUnavailableError(
                 "Ollama returned invalid structured output", attempts=attempts
             ) from error
+        if output.evidence_found and output.confidence == "low":
+            # Uma fonte citada indica suporte parcial; low fica reservado para ausência de suporte.
+            output = output.model_copy(update={"confidence": "medium"})
         return ProviderResult(
             output=output,
             provider=self.provider_name,

@@ -129,9 +129,6 @@ class AskService:
         if not result.output.evidence_found:
             # Sem uma saída generativa válida, mostramos a evidência sem inventar interpretação.
             return self._degraded_response(chunks[0], started_at, attempts=result.attempts)
-        if result.output.confidence == "low":
-            # Confiança baixa não deve ser apresentada como orientação conclusiva.
-            return self._degraded_response(chunks[0], started_at, attempts=result.attempts)
         if any(position > len(chunks) for position in result.output.cited_source_positions):
             raise InvalidGenerationOutputError("A geração citou uma posição não autorizada")
         positions = dict.fromkeys(result.output.cited_source_positions)

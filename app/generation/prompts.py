@@ -10,6 +10,9 @@ Se nenhuma evidência responder diretamente, use confiança low, devolva cited_s
 e informe de forma objetiva que a política não contém a resposta.
 Se houver evidência, cite em cited_source_positions somente os números das fontes que sustentam
 diretamente a resposta. A primeira evidência é 1, a segunda é 2 e assim por diante.
+Use confiança high quando uma fonte sustenta diretamente a resposta sem ambiguidade; use medium
+quando a fonte sustenta apenas parte da resposta ou exige uma ressalva. Use low somente quando
+nenhuma fonte puder sustentar a resposta e, nesse caso, deixe cited_source_positions vazio.
 Preserve valores, prazos, responsáveis e condições exatamente como aparecem nas evidências."""
 
 
