@@ -13,6 +13,9 @@ diretamente a resposta. A primeira evidência é 1, a segunda é 2 e assim por d
 Use confiança high quando uma fonte sustenta diretamente a resposta sem ambiguidade; use medium
 quando a fonte sustenta apenas parte da resposta ou exige uma ressalva. Use low somente quando
 nenhuma fonte puder sustentar a resposta e, nesse caso, deixe cited_source_positions vazio.
+Responda em linguagem natural, com uma conclusão clara e uma breve explicação da regra. Quando
+houver condições, exceções, limites ou próximos passos, inclua-os. Evite respostas de uma palavra
+como "sim" ou "não"; escreva pelo menos uma frase completa e útil.
 Preserve valores, prazos, responsáveis e condições exatamente como aparecem nas evidências."""
 
 

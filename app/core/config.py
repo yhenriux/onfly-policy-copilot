@@ -78,7 +78,7 @@ class Settings(BaseSettings):
     max_context_characters: int = Field(default=5_000, ge=200, le=50_000)
     context_redundancy_threshold: float = Field(default=0.8, gt=0, le=1)
     evidence_min_score: float = Field(default=0.5, ge=0, le=1)
-    generation_max_evidence_chunks: int = Field(default=1, ge=1, le=10)
+    generation_max_evidence_chunks: int = Field(default=3, ge=1, le=10)
     chunk_max_chars: int = Field(default=800, ge=200, le=4_000)
     chunk_overlap_chars: int = Field(default=120, ge=0, le=1_000)
     max_question_length: int = Field(default=2_000, ge=1, le=20_000)

@@ -62,10 +62,12 @@ class GenerationOutput(BaseModel):
 
     @model_validator(mode="after")
     def validate_source_positions(self) -> Self:
-        """Impede posições inválidas no contexto numerado."""
+        """Impede posições inválidas e respostas citadas excessivamente curtas."""
 
         if any(position < 1 for position in self.cited_source_positions):
             raise ValueError("As posições das fontes começam em 1")
+        if self.cited_source_positions and len(self.answer.split()) < 4:
+            raise ValueError("Uma resposta com fonte citada precisa explicar a regra")
         return self
 
     @property

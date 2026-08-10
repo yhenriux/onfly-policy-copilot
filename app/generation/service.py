@@ -65,7 +65,7 @@ class AskService:
         retriever: Retriever,
         retrieval_limit: int,
         evidence_min_score: float = 0.5,
-        max_evidence_chunks: int = 1,
+        max_evidence_chunks: int = 3,
     ) -> None:
         self._provider = provider
         self._retriever = retriever
