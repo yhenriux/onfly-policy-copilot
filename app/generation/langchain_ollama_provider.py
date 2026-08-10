@@ -85,6 +85,9 @@ class LangChainOllamaProvider:
                     if isinstance(output, GenerationOutput)
                     else GenerationOutput.model_validate(output)
                 )
+                if validated.evidence_found and validated.confidence == "low":
+                    # Fonte citada indica suporte parcial; low fica para ausência de suporte.
+                    validated = validated.model_copy(update={"confidence": "medium"})
                 return ProviderResult(
                     output=validated,
                     provider=self.provider_name,
