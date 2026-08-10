@@ -262,6 +262,7 @@ tests/               testes unitários, integrados e de segurança
 
 ## Documentação técnica
 
+- [Especificação de design conversacional e UX Writing para LLMs e agentes](docs/especificacao-design-conversacional-ux-writing-llm-agentes-v1.md)
 - [Catálogo e organização do repositório](docs/repositorio-catalogo-classificacao-github-v1.md)
 - [Arquitetura](docs/rag-arquitetura-explicacao-local-v1.md)
 - [Ontologia do grafo de conhecimento](docs/rag-ontologia-conhecimento-v1.md)
