@@ -127,6 +127,21 @@ class AskService:
         """Aceita somente fontes que realmente estavam no contexto autorizado."""
 
         if not result.output.evidence_found:
+            if (
+                len(result.output.answer.split()) >= 4
+                and chunks[0].score >= max(self._evidence_min_score, 0.8)
+                and not _is_refusal(result.output.answer)
+            ):
+                # Modelos pequenos podem omitir a posição citada apesar de produzir uma resposta
+                # sustentada pelo Top-1. Mantemos o texto e vinculamos somente a evidência forte.
+                return AskResponse(
+                    answer=result.output.answer,
+                    sources=[_source(chunks[0])],
+                    confidence="medium",
+                    request_id=current_trace().request_id,
+                    latency_ms=_elapsed_ms(started_at),
+                    generation=_metadata(result, status="generated"),
+                )
             # Sem uma saída generativa válida, mostramos a evidência sem inventar interpretação.
             return self._degraded_response(chunks[0], started_at, attempts=result.attempts)
         if any(position > len(chunks) for position in result.output.cited_source_positions):
@@ -331,3 +346,18 @@ def _elapsed_ms(started_at: float) -> int:
     """Calcula a latência sem permitir valor negativo."""
 
     return max(0, round((perf_counter() - started_at) * 1_000))
+
+
+def _is_refusal(answer: str) -> bool:
+    """Identifica recusas que não devem ser promovidas com uma fonte apenas relacionada."""
+
+    normalized = answer.casefold()
+    return any(
+        phrase in normalized
+        for phrase in (
+            "não encontrei evidências",
+            "não encontrei uma regra",
+            "não há evidência",
+            "não contém essa informação",
+        )
+    )

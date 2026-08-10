@@ -105,6 +105,24 @@ async def test_service_returns_only_sources_cited_by_structured_output() -> None
     )
 
 
+async def test_service_keeps_substantive_answer_when_small_model_omits_citation() -> None:
+    provider = _Provider(
+        GenerationOutput(
+            answer="A mala pode ser despachada conforme as condições da política.",
+            cited_source_positions=[],
+            confidence="low",
+        )
+    )
+    service = AskService(provider=provider, retriever=_Retriever([_chunk()]), retrieval_limit=5)
+
+    response = await service.ask(_request(), _context())
+
+    assert response.answer.startswith("A mala pode ser despachada")
+    assert response.sources[0].chunk_id == "chunk_001"
+    assert response.confidence == "medium"
+    assert response.generation.status == "generated"
+
+
 async def test_grounded_answer_requires_evidence_above_minimum_score() -> None:
     low_score = _chunk()
     low_score = RetrievedChunk(
