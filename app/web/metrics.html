@@ -64,6 +64,15 @@
           </div>
         </section>
 
+        <section class="panel graph-panel" aria-labelledby="graph-title">
+          <div class="panel-head">
+            <div><h2 id="graph-title">Mapa de observabilidade</h2><span>relações entre sessões, respostas e sinais técnicos</span></div>
+            <div class="graph-legend"><span><i class="graph-dot session"></i>Sessão</span><span><i class="graph-dot response"></i>Resposta</span><span><i class="graph-dot signal"></i>Sinal</span></div>
+          </div>
+          <div class="graph-canvas" id="graph-canvas" role="img" aria-label="Grafo de sessões e respostas"></div>
+          <p class="graph-hint">Selecione um nó para abrir os detalhes no histórico.</p>
+        </section>
+
         <div class="panel-row">
           <section class="panel" aria-labelledby="latency-title">
             <div class="panel-head">

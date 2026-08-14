@@ -17,6 +17,7 @@ const elements = {
   eventGrid: document.querySelector("#event-grid"),
   sessionList: document.querySelector("#session-list"),
   responseHistory: document.querySelector("#response-history"),
+  graphCanvas: document.querySelector("#graph-canvas"),
 };
 
 const latencyOrder = ["http_total", "ollama_embedding", "retrieval", "reranking", "ollama_generation", "total"];
@@ -321,6 +322,35 @@ function renderResponseRows(responses) {
   });
 }
 
+function renderGraph(sessions, responses) {
+  const width = 1000;
+  const height = Math.max(300, Math.min(520, 180 + sessions.length * 28));
+  const nodes = [];
+  const edges = [];
+  sessions.slice(0, 8).forEach((session, sessionIndex) => {
+    const sessionId = `session-${sessionIndex}`;
+    nodes.push({ id: sessionId, type: "session", label: session.tenant_id, x: 130, y: 70 + sessionIndex * 52, target: session.session_id });
+    responses.filter((item) => item.session_id === session.session_id).slice(0, 5).forEach((item, responseIndex) => {
+      const responseId = `response-${sessionIndex}-${responseIndex}`;
+      nodes.push({ id: responseId, type: "response", label: item.request_id.slice(0, 14), x: 470, y: 54 + sessionIndex * 52 + responseIndex * 22, target: session.session_id });
+      edges.push([sessionId, responseId]);
+    });
+  });
+  [["signal-volume", "volume", 820, 95], ["signal-latency", "latência", 820, 175], ["signal-quality", "qualidade", 820, 255], ["signal-events", "eventos", 820, 335]].forEach(([id, label, x, y]) => nodes.push({ id, type: "signal", label, x, y }));
+  sessions.slice(0, 8).forEach((_, index) => { edges.push([`session-${index}`, "signal-volume"], [`session-${index}`, "signal-quality"]); });
+  const nodeById = Object.fromEntries(nodes.map((node) => [node.id, node]));
+  const svg = [`<svg class="graph-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">`];
+  edges.forEach(([from, to]) => { const a = nodeById[from]; const b = nodeById[to]; if (a && b) svg.push(`<line class="graph-edge" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" />`); });
+  nodes.forEach((node) => svg.push(`<g class="graph-node ${node.type}" data-target="${node.target || ""}" tabindex="0"><circle cx="${node.x}" cy="${node.y}" r="${node.type === "signal" ? 18 : 13}" /><text x="${node.x + 24}" y="${node.y + 4}">${node.label}</text></g>`));
+  svg.push("</svg>");
+  elements.graphCanvas.innerHTML = svg.join("");
+  elements.graphCanvas.querySelectorAll(".graph-node").forEach((node) => {
+    const select = () => { const target = node.dataset.target; if (!target) return; document.querySelectorAll(".session-card").forEach((item) => item.classList.toggle("selected", item.dataset.sessionId === target)); renderResponseRows(responses.filter((item) => item.session_id === target)); document.querySelector(".history-panel")?.scrollIntoView({ behavior: "smooth", block: "center" }); };
+    node.addEventListener("click", select);
+    node.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") select(); });
+  });
+}
+
 function renderAll(counters, latencies, indicators) {
   renderKpis(counters);
   renderLatencies(latencies);
@@ -347,7 +377,10 @@ async function loadMetrics() {
     renderAll(counters, latencies, indicators);
   }
   if (historyOk) {
-    renderHistory(await sessionsResult.value.json(), await responsesResult.value.json());
+    const sessions = await sessionsResult.value.json();
+    const responses = await responsesResult.value.json();
+    renderHistory(sessions, responses);
+    renderGraph(sessions, responses);
   }
   if (metricsOk && historyOk) {
     setHidden(elements.error, true);
