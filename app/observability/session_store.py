@@ -31,10 +31,20 @@ class ObservabilityStore:
                     latency_ms INTEGER NOT NULL,
                     sources_count INTEGER NOT NULL,
                     output_tokens INTEGER NOT NULL,
-                    timings_json TEXT NOT NULL
+                    timings_json TEXT NOT NULL,
+                    documents_json TEXT NOT NULL DEFAULT '[]'
                 )
                 """
             )
+            columns = {
+                row["name"]
+                for row in connection.execute("PRAGMA table_info(response_observations)")
+            }
+            if "documents_json" not in columns:
+                connection.execute(
+                    "ALTER TABLE response_observations ADD COLUMN documents_json "
+                    "TEXT NOT NULL DEFAULT '[]'"
+                )
 
     def record(
         self,
@@ -54,8 +64,8 @@ class ObservabilityStore:
                 """
                 INSERT OR REPLACE INTO response_observations
                 (request_id, session_id, tenant_id, user_id, created_at, status,
-                 confidence, latency_ms, sources_count, output_tokens, timings_json)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 confidence, latency_ms, sources_count, output_tokens, timings_json, documents_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     response.request_id,
@@ -69,6 +79,10 @@ class ObservabilityStore:
                     len(response.sources),
                     trace.estimated_output_tokens,
                     _json_dumps(trace.timings_ms),
+                    json.dumps(
+                        [document.model_dump() for document in trace.documents],
+                        separators=(",", ":"),
+                    ),
                 ),
             )
 
@@ -94,7 +108,8 @@ class ObservabilityStore:
 
         query = """
             SELECT request_id, session_id, tenant_id, user_id, created_at, status,
-                   confidence, latency_ms, sources_count, output_tokens, timings_json
+                   confidence, latency_ms, sources_count, output_tokens,
+                   timings_json, documents_json
             FROM response_observations
         """
         parameters: tuple[Any, ...] = ()
@@ -106,7 +121,12 @@ class ObservabilityStore:
         with self._lock, self._connect() as connection:
             rows = connection.execute(query, parameters).fetchall()
         return [
-            {**dict(row), "timings_ms": _json_loads(row["timings_json"])} for row in rows
+            {
+                **dict(row),
+                "timings_ms": _json_loads(row["timings_json"]),
+                "documents": json.loads(row["documents_json"]),
+            }
+            for row in rows
         ]
 
     def _connect(self) -> sqlite3.Connection:

@@ -327,17 +327,36 @@ function renderGraph(sessions, responses) {
   const height = Math.max(300, Math.min(520, 180 + sessions.length * 28));
   const nodes = [];
   const edges = [];
+  const signalNodes = [
+    ["signal-volume", `Volume · ${responses.length} respostas`, 820, 95],
+    ["signal-latency", "Latência média", 820, 175],
+    ["signal-quality", "Qualidade das respostas", 820, 255],
+    ["signal-events", "Atividade da interface", 820, 335],
+  ];
   sessions.slice(0, 8).forEach((session, sessionIndex) => {
     const sessionId = `session-${sessionIndex}`;
-    nodes.push({ id: sessionId, type: "session", label: session.tenant_id, x: 130, y: 70 + sessionIndex * 52, target: session.session_id });
+    nodes.push({ id: sessionId, type: "session", label: `Sessão ${sessionIndex + 1} · ${session.tenant_id.replaceAll("_", " ")}`, x: 110, y: 70 + sessionIndex * 72, target: session.session_id });
     responses.filter((item) => item.session_id === session.session_id).slice(0, 5).forEach((item, responseIndex) => {
       const responseId = `response-${sessionIndex}-${responseIndex}`;
-      nodes.push({ id: responseId, type: "response", label: item.request_id.slice(0, 14), x: 470, y: 54 + sessionIndex * 52 + responseIndex * 22, target: session.session_id });
+      const y = 54 + sessionIndex * 72 + responseIndex * 28;
+      nodes.push({ id: responseId, type: "response", label: `Resposta ${responseIndex + 1} · ${item.status}`, x: 390, y, target: session.session_id });
       edges.push([sessionId, responseId]);
+      edges.push([responseId, "signal-quality"]);
+      const topics = [...new Set((item.documents || []).map((document) => document.section).filter(Boolean))].slice(0, 2);
+      topics.forEach((topic, topicIndex) => {
+        const topicId = `topic-${sessionIndex}-${responseIndex}-${topicIndex}`;
+        nodes.push({ id: topicId, type: "topic", label: `Assunto · ${topic}`, x: 650, y: y + topicIndex * 22, target: session.session_id });
+        edges.push([responseId, topicId]);
+      });
+      (item.documents || []).slice(0, 2).forEach((document, documentIndex) => {
+        const chunkId = `chunk-${sessionIndex}-${responseIndex}-${documentIndex}`;
+        nodes.push({ id: chunkId, type: "chunk", label: `Chunk · ${document.chunk_id}`, x: 650, y: y + 42 + documentIndex * 22, target: session.session_id });
+        edges.push([responseId, chunkId]);
+      });
     });
   });
-  [["signal-volume", "volume", 820, 95], ["signal-latency", "latência", 820, 175], ["signal-quality", "qualidade", 820, 255], ["signal-events", "eventos", 820, 335]].forEach(([id, label, x, y]) => nodes.push({ id, type: "signal", label, x, y }));
-  sessions.slice(0, 8).forEach((_, index) => { edges.push([`session-${index}`, "signal-volume"], [`session-${index}`, "signal-quality"]); });
+  signalNodes.forEach(([id, label, x, y]) => nodes.push({ id, type: "signal", label, x, y }));
+  sessions.slice(0, 8).forEach((_, index) => edges.push([`session-${index}`, "signal-volume"]));
   const nodeById = Object.fromEntries(nodes.map((node) => [node.id, node]));
   const svg = [`<svg class="graph-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">`];
   edges.forEach(([from, to]) => { const a = nodeById[from]; const b = nodeById[to]; if (a && b) svg.push(`<line class="graph-edge" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" />`); });
